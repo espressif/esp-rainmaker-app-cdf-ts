@@ -1,0 +1,18 @@
+lerna-debug.log
+node_modules
+.DS_Store
+.vscode
+.idea
+.npm/
+*.log
+**/.DS_Store
+.env.test
+*.tgz
+
+/dist/
+/docs/
+/node_modules/**
+
+# rollup
+.rollup.cache
+buildMeta

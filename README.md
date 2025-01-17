@@ -1,93 +1,172 @@
-# esp-rm-app-sdk-resources
+# ESP Rainmaker Typescript Base CDF
 
+The **@espressif/rainmaker-base-cdf** package is a reactive state management library for Rainmaker applications, built on MobX, offering seamless state synchronization through predefined stores (`GroupStore`, `NodeStore`, `UserStore`, `SubscriptionStore`). It automatically updates with backend API calls via **@espressif/rainmaker-base-sdk**, ensuring efficient data flow and real-time reactivity
 
+---
 
-## Getting started
+## Table of Contents
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+---
 
-## Add your files
+## Overview
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+The `@espressif/rainmaker-base-cdf` package is a reactive state management library designed for Rainmaker applications. Built with MobX at its core, it provides a seamless and efficient way to manage and synchronize application state through its predefined stores: `GroupStore`, `NodeStore`, `UserStore`, and `SubscriptionStore`. These stores automatically update when backend APIs are called through the `@espressif/rainmaker-base-sdk` package, ensuring robust data handling and communication. This simplifies data flow and keeps your application effortlessly reactive and up-to-date.
 
-```
-cd existing_repo
-git remote add origin https://gitlab.espressif.cn:6688/app-frameworks/esp-rm-app-sdk-resources.git
-git branch -M main
-git push -uf origin main
-```
+---
 
-## Integrate with your tools
+## Key Features
 
-- [ ] [Set up project integrations](https://gitlab.espressif.cn:6688/app-frameworks/esp-rm-app-sdk-resources/-/settings/integrations)
+- [x] **Reactive State Management:** Provides prebuilt reactive stores (`GroupStore`, `NodeStore`, `UserStore`, and `SubscriptionStore`) using MobX, ensuring seamless state synchronization and updates.
+- [x] **Backend Integration with `@espressif/rainmaker-base-sdk`:** Automatically manages API calls through the `@espressif/rainmaker-base-sdk` package, reducing the need for repetitive backend setup.
+- [x] **Effortless Initialization:** Automatically initializes the `@espressif/rainmaker-base-sdk` package with minimal configuration, requiring only SDK and CDF setup.
+- [x] **Unified Data Flow:** Offers a centralized, reactive layer for managing data from Rainmaker backend services, streamlining app development.
+- [x] **Modular and Scalable:** Provides a flexible architecture to suit both simple and complex Rainmaker applications, supporting extensibility and maintainability.
 
-## Collaborate with your team
+---
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## Requirements
 
-## Test and Deploy
+Before installing the `@espressif/rainmaker-base-cdf` package, ensure you meet the following prerequisites:
 
-Use the built-in continuous integration in GitLab.
+- **Node.js**: Version 20.17.0 or higher is recommended.
+- **Package Manager**: Any one from npm, yarn, or pnpm installed.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+---
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+
+To use the `@espressif/rainmaker-base-cdf` package in your project, follow the steps below:
+
+Install `@espressif/rainmaker-base-cdf` using the following command:
+
+### Using npm
+
+```bash
+npm install @espressif/rainmaker-base-cdf
+```
+
+### Using Yarn
+
+```bash
+yarn add @espressif/rainmaker-base-cdf
+```
+
+### Using pnpm
+
+```bash
+pnpm add @espressif/rainmaker-base-cdf
+```
+
+After installation, you can import and initialize the package in your project to start using the reactive stores.
+
+---
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Below are examples to help you get started with the `@espressif/rainmaker-base-cdf` package in your application:
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### 1. **Initialization**
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Initialize the `@espressif/rainmaker-base-cdf` package by providing the required configuration. This automatically sets up the necessary reactive stores.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```javascript
+import { initCDF } from "@espressif/rainmaker-base-cdf";
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+const initApp = async () => {
+  const sdkConfiguration = {
+    baseUrl: "https://api.rainmaker.espressif.com",
+    version: "v1",
+  };
+  try {
+    const espCDF = await initCDF(sdkConfiguration, { autoSync: true });
+    console.log("Rainmaker Base CDF initialized:", espCDF);
+  } catch (error) {
+    console.error("Initialization error:", error);
+  }
+};
+initApp();`
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---
+
+### 2. **User Authentication**
+
+Use the `UserStore` for logging in and managing user-related data.
+
+#### Example: Login
+
+```javascript
+const handleConnect = async () => {
+  try {
+    await espCDF.userStore.login(username, password);
+    console.log("User logged in successfully");
+  } catch (error) {
+    console.error("Login error:", error);
+  }
+};
+```
+
+#### Example: Accessing User Info
+
+```javascript
+if (espCDF.userStore.userInfo) {
+  console.log("User Info:", espCDF.userStore.userInfo);
+}
+```
+
+---
+
+### 3. **Working with Nodes**
+
+Use the `NodeStore` to interact with node data.
+
+#### Example: Fetching Nodes
+
+```javascript
+const nodes = espCDF.nodeStore.nodeList;
+console.log("Nodes:", nodes);
+```
+
+#### Example: Reactively Handling Node Updates
+
+```javascript
+useEffect(() => {
+  console.groupCollapsed("Node list updated");
+  console.log(espCDF.nodeStore.nodeList);
+  console.groupEnd();
+}, [espCDF.nodeStore.nodeList]);
+```
+
+---
+
+### 4. **Working with Groups**
+
+Use the `GroupStore` to manage group data.
+
+#### Example: Fetching Groups
+
+```javascript
+const groups = espCDF.groupStore.groupList;
+console.log("Groups:", groups);
+```
+
+#### Example: Handling Group Updates
+
+```javascript
+useEffect(() => {
+  console.groupCollapsed("Group list updated");
+  console.log(espCDF.groupStore.groupList);
+  console.groupEnd();
+}, [espCDF.groupStore.groupList]);
+```
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is licensed under the Apache 2.0 license - see the [LICENSE](LICENSE) file for details.
