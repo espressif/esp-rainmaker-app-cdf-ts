@@ -12,6 +12,7 @@ The **@espressif/rainmaker-base-cdf** package is a reactive state management lib
 - [Installation](#installation)
 - [Usage](#usage)
 - [License](#license)
+- [API Documentation](https://espressif.github.io/esp-rainmaker-app-cdf-ts/)
 
 ---
 

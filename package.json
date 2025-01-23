@@ -6,6 +6,17 @@
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/espressif/esp-rainmaker-app-cdf-ts.git"
+  },
+  "homepage": "https://github.com/espressif/esp-rainmaker-app-cdf-ts#readme",
+  "bugs": {
+    "url": "https://github.com/espressif/esp-rainmaker-app-cdf-ts/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "rm -rf ./dist && tsc",
     "format": "prettier --write .",
