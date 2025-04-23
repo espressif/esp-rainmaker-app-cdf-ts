@@ -5,28 +5,27 @@
  */
 
 // main modules
-import type { ESPRMGroup } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMGroup";
-import type { ESPRMNode } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMNode";
-import type { ESPDevice } from "@espressif/rainmaker-base-sdk/dist/types/ESPDevice";
-import type { ESPGroupSharingInfo } from "@espressif/rainmaker-base-sdk/dist/types/ESPGroupSharingInfo";
-import type { ESPGroupSharingRequest } from "@espressif/rainmaker-base-sdk/dist/types/ESPGroupSharingRequest";
-import type { ESPGroupSharingUserInfo } from "@espressif/rainmaker-base-sdk/dist/types/ESPGroupSharingUserInfo";
-import type { ESPNodeSharingRequest } from "@espressif/rainmaker-base-sdk/dist/types/ESPNodeSharingRequest";
-import type { ESPPlatformEndpoint } from "@espressif/rainmaker-base-sdk/dist/types/ESPPlatformEndpoint";
-import type { ESPProvisionManager } from "@espressif/rainmaker-base-sdk/dist/types/ESPProvisionManager";
-import type { ESPRMAttribute } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMAttribute";
-import type { ESPRMConnectivityStatus } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMConnectivityStatus";
-import type { ESPRMDevice } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMDevice";
-import type { ESPRMDeviceParam } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMDeviceParam";
-import type { ESPRMNodeConfig } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMNodeConfig";
-import type { ESPRMNodeInfo } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMNodeInfo";
-import type { ESPRMService } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMService";
-import type { ESPRMServiceParam } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMServiceParam";
-import type { ESPRMUser } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMUser";
-import type { ESPRMAuth } from "@espressif/rainmaker-base-sdk/dist/types/ESPRMAuth";
+import type { ESPRMGroup } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMNode } from "@espressif/rainmaker-base-sdk";
+import type { ESPDevice } from "@espressif/rainmaker-base-sdk";
+import type { ESPGroupSharingInfo } from "@espressif/rainmaker-base-sdk";
+import type { ESPGroupSharingRequest } from "@espressif/rainmaker-base-sdk";
+import type { ESPGroupSharingUserInfo } from "@espressif/rainmaker-base-sdk";
+import type { ESPNodeSharingRequest } from "@espressif/rainmaker-base-sdk";
+import type { ESPPlatformEndpoint } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMAttribute } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMConnectivityStatus } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMDevice } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMDeviceParam } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMNodeConfig } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMNodeInfo } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMService } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMServiceParam } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMUser } from "@espressif/rainmaker-base-sdk";
+import type { ESPRMAuth } from "@espressif/rainmaker-base-sdk";
 
 // discovery
-import type { ESPDiscoveryProtocol } from "@espressif/rainmaker-base-sdk/dist/types/types/discovery";
+import type { ESPDiscoveryProtocol } from "@espressif/rainmaker-base-sdk";
 
 // ESPModules
 import type {
@@ -34,7 +33,7 @@ import type {
   ESPGroupSharingRequestInterface,
   ESPGroupSharingStatus,
   ESPPlatformEndpointInterface,
-} from "@espressif/rainmaker-base-sdk/dist/types/types/ESPModules";
+} from "@espressif/rainmaker-base-sdk";
 
 // input
 import type {
@@ -73,7 +72,7 @@ import type {
   DeviceParams,
   NodePayload,
   MultipleNodePayload,
-} from "@espressif/rainmaker-base-sdk/dist/types/types/input";
+} from "@espressif/rainmaker-base-sdk";
 
 // output
 import type {
@@ -98,7 +97,7 @@ import type {
   CreateSubGroupAPIResponse,
   ESPGroupSharingResponse,
   GetGroupSharingRequestsAPIResponse,
-} from "@espressif/rainmaker-base-sdk/dist/types/types/output";
+} from "@espressif/rainmaker-base-sdk";
 
 // node
 import type {
@@ -111,7 +110,7 @@ import type {
   ESPRMDeviceParamInterface,
   ESPRMServiceInterface,
   ESPRMServiceParamInterface,
-} from "@espressif/rainmaker-base-sdk/dist/types/types/node";
+} from "@espressif/rainmaker-base-sdk";
 
 // provision
 import type {
@@ -124,17 +123,17 @@ import type {
   ESPProvisionAdapterInterface,
   ESPProvResponse,
   ESPProvResponseStatus,
-} from "@espressif/rainmaker-base-sdk/dist/types/types/provision";
+} from "@espressif/rainmaker-base-sdk";
 
 // storage
-import type { ESPRMStorageAdapterInterface } from "@espressif/rainmaker-base-sdk/dist/types/types/storage";
+import type { ESPRMStorageAdapterInterface } from "@espressif/rainmaker-base-sdk";
 
 //transport
 import type {
   ESPTransportMode,
   ESPTransportConfig,
   ESPTransportInterface,
-} from "@espressif/rainmaker-base-sdk/dist/types/types/transport";
+} from "@espressif/rainmaker-base-sdk";
 import { CDF } from "../store";
 
 type Interceptor = (
@@ -174,7 +173,6 @@ export {
   ESPGroupSharingUserInfo,
   ESPNodeSharingRequest,
   ESPPlatformEndpoint,
-  ESPProvisionManager,
   ESPRMAttribute,
   ESPRMConnectivityStatus,
   ESPRMDevice,
