@@ -6,6 +6,8 @@ export const NO_MORE_GROUPS_TO_FETCH_ERR = "No more groups to fetch";
 export const NO_MORE_SHARING_REQUESTS_TO_FETCH_ERR =
   "No more sharing requests to fetch";
 export const NO_MORE_NODES_TO_FETCH_ERR = "No more nodes to fetch";
+export const NO_MORE_AUTOMATIONS_TO_FETCH_ERR = "No more automations to fetch";
+export const USER_NOT_LOGGED_IN_ERR = "User not logged in";
 
 // Dynamic error message generation
 export const PROPERTY_NOT_A_FUNCTION_ERR = (key: string, keyPath: string[]) =>
@@ -29,12 +31,12 @@ export enum SceneOperation {
   ADD = "add",
   EDIT = "edit",
   REMOVE = "remove",
-  ACTIVATE = "activate"
+  ACTIVATE = "activate",
 }
 
 // NODE UPDATE TYPES
 export enum NodeUpdateType {
   CONNECTIVITY_STATUS = "connectivityStatus",
   DEVICE_PARAMS = "deviceParams",
-  NODE_CONFIG = "nodeConfig"
+  NODE_CONFIG = "nodeConfig",
 }

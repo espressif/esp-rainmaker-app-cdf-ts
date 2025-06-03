@@ -13,6 +13,8 @@ import {
   ESPTransportConfig,
   ESPNodeSharingRequest,
   ESPPaginatedNodesResponse,
+  ESPAutomation,
+  ESPPaginatedAutomationsResponse,
 } from "../types/index";
 import {
   makeEverythingObservable,
@@ -115,6 +117,18 @@ class NodeStore {
       },
     });
 
+    const addAutomationInterceptor = createInterceptor({
+      onSuccess: (result: ESPAutomation, args, context) => {
+        return this.rootStore?.automationStore.addAutomation(result);
+      },
+    });
+
+    const getNodeAutomationsInterceptor = createInterceptor({
+      onSuccess: (result: ESPPaginatedAutomationsResponse, args, context) => {
+        return this.rootStore?.automationStore.processAutomationsRes(result);
+      },
+    });
+
     proxyActionHandler(
       node,
       "nodeConfig.devices.getParams",
@@ -134,6 +148,8 @@ class NodeStore {
     proxyActionHandler(node, "getNodeConfig", getNodeConfigInterceptor);
     proxyActionHandler(node, "getServices", getServicesInterceptor);
     proxyActionHandler(node, "delete", deleteInterceptor);
+    proxyActionHandler(node, "addAutomation", addAutomationInterceptor);
+    proxyActionHandler(node, "getAutomations", getNodeAutomationsInterceptor);
   }
   #interceptProxySharingRequest(
     sharingRequest: ESPNodeSharingRequest,

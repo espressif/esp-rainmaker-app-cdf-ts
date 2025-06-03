@@ -12,6 +12,10 @@ import {
   ESPRMUserInfo,
   ESPRMAuth,
   ESPRMAuthWithKeys,
+  ESPPaginatedAutomationsResponse,
+  ESPAutomation,
+  ESPAPIResponse,
+  ESPGeoCoordinates,
 } from "../types/index";
 
 import {
@@ -121,6 +125,7 @@ class UserStore {
         this.clear();
         this.#rootStore?.nodeStore.clear();
         this.#rootStore?.groupStore.clear();
+        this.#rootStore?.automationStore.clear();
         return { success: true };
       } else {
         return { success: false, ...response };
@@ -206,6 +211,7 @@ class UserStore {
         this.clear();
         this.#rootStore?.nodeStore.clear();
         this.#rootStore?.groupStore.clear();
+        this.#rootStore?.automationStore.clear();
       }
       return response;
     } catch (error) {
@@ -316,6 +322,7 @@ class UserStore {
         this.clear();
         this.#rootStore?.nodeStore.clear();
         this.#rootStore?.groupStore.clear();
+        this.#rootStore?.automationStore.clear();
       },
     });
 
@@ -392,6 +399,41 @@ class UserStore {
       },
     });
 
+    // Automation Interceptors
+    const getAutomationsInterceptor = createInterceptor({
+      onSuccess: (result: ESPPaginatedAutomationsResponse, args) => {
+        return this.#rootStore?.automationStore.processAutomationsRes(result);
+      },
+    });
+    const getAutomationDetailInterceptor = createInterceptor({
+      onSuccess: (result: ESPAutomation, args) => {
+        return this.#rootStore?.automationStore.addAutomation(result);
+      },
+    });
+    const addWeatherBasedAutomationInterceptor = createInterceptor({
+      onSuccess: (result: ESPAutomation, args) => {
+        return this.#rootStore?.automationStore.addAutomation(result);
+      },
+    });
+    const addDaylightBasedAutomationInterceptor = createInterceptor({
+      onSuccess: (result: ESPAutomation, args) => {
+        return this.#rootStore?.automationStore.addAutomation(result);
+      },
+    });
+    const setGeoCoordinatesInterceptor = createInterceptor({
+      onSuccess: (result: ESPAPIResponse, args) => {
+        const coordinates = args[0];
+        this.#rootStore?.automationStore.setGeoCoordinates(coordinates);
+        return result;
+      },
+    });
+    const getGeoCoordinatesInterceptor = createInterceptor({
+      onSuccess: (result: ESPGeoCoordinates, args) => {
+        this.#rootStore?.automationStore.setGeoCoordinates(result);
+        return result;
+      },
+    });
+
     // user methods
     proxyActionHandler(user, "getUserInfo", getUserInfoInterceptor);
     proxyActionHandler(user, "updateName", updateNameInterceptor);
@@ -438,6 +480,26 @@ class UserStore {
       "getReceivedNodeSharingRequests",
       getReceivedNodeSharingRequestsInterceptor
     );
+
+    // automation methods
+    proxyActionHandler(user, "getAutomations", getAutomationsInterceptor);
+    proxyActionHandler(
+      user,
+      "getAutomationDetail",
+      getAutomationDetailInterceptor
+    );
+    proxyActionHandler(
+      user,
+      "addWeatherBasedAutomation",
+      addWeatherBasedAutomationInterceptor
+    );
+    proxyActionHandler(
+      user,
+      "addDaylightBasedAutomation",
+      addDaylightBasedAutomationInterceptor
+    );
+    proxyActionHandler(user, "setGeoCoordinates", setGeoCoordinatesInterceptor);
+    proxyActionHandler(user, "getGeoCoordinates", getGeoCoordinatesInterceptor);
   }
 }
 
