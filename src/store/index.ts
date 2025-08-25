@@ -8,10 +8,13 @@ import UserStore from "./userStore";
 import NodeStore from "./nodeStore";
 import GroupStore from "./groupStore";
 import SubscriptionStore from "./subscriptionStore";
+import SceneStore from "./sceneStore";
+
 import { observable, action } from "mobx";
 import { CDFconfig, ESPRMBaseConfig } from "../types";
 import { ESPRMBase } from "@espressif/rainmaker-base-sdk";
 import * as constants from "../utils/constants";
+
 
 /**
  * The root store that manages all individual stores.
@@ -23,7 +26,9 @@ class CDF {
   @observable accessor userStore: UserStore;
   @observable accessor nodeStore: NodeStore;
   @observable accessor groupStore: GroupStore;
+  @observable accessor sceneStore: SceneStore;
   @observable accessor subscriptionStore: SubscriptionStore;
+
 
   constructor(sdkInstance: any) {
     this.sdkInstance = sdkInstance || null;
@@ -31,6 +36,7 @@ class CDF {
     this.nodeStore = new NodeStore(this);
     this.userStore = new UserStore(this);
     this.subscriptionStore = new SubscriptionStore(this);
+    this.sceneStore = new SceneStore(this);
   }
 
   initialize = async (authInstance: any) => {

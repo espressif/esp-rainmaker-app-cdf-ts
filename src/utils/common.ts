@@ -44,35 +44,39 @@ export const makeEverythingObservable = <T extends object>(
   obj: T,
   visited: WeakSet<object> = new WeakSet()
 ): T => {
-  if (Array.isArray(obj)) {
-    if (isObservableArray(obj)) {
-      return obj;
-    }
-    return observable.array(
-      obj.map((item) => makeEverythingObservable(item, visited))
-    ) as unknown as T;
-  } else if (obj !== null && typeof obj === "object") {
-    if (visited.has(obj)) {
-      return obj;
-    }
-    visited.add(obj);
-
-    if (isObservableObject(obj) || isObservableMap(obj)) {
-      return obj;
-    }
-
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const value: any = (obj as Record<string, unknown>)[key];
-        (obj as Record<string, unknown>)[key] = makeEverythingObservable(
-          value,
-          visited
-        );
+  try {
+    if (Array.isArray(obj)) {
+      if (isObservableArray(obj)) {
+        return obj;
       }
+      return observable.array(
+        obj.map((item) => makeEverythingObservable(item, visited))
+      ) as unknown as T;
+    } else if (obj !== null && typeof obj === "object") {
+      if (visited.has(obj)) {
+        return obj;
+      }
+      visited.add(obj);
+
+      if (isObservableObject(obj) || isObservableMap(obj)) {
+        return obj;
+      }
+
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value: any = (obj as Record<string, unknown>)[key];
+          (obj as Record<string, unknown>)[key] = makeEverythingObservable(
+            value,
+            visited
+          );
+        }
+      }
+      return makeAutoObservable(obj);
     }
-    return makeAutoObservable(obj);
+    return obj;
+  } catch (error) {
+    throw new Error("Error making object observable: " + error);
   }
-  return obj;
 };
 
 /**
