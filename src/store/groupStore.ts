@@ -92,8 +92,17 @@ class GroupStore {
 
     const deleteGroupInterceptor = createInterceptor({
       action: (context, args) => {
-        const { id } = context;
-        delete this.groupsByID[id];
+        const { id, parentGroupId } = context;
+        if (parentGroupId) {
+          const parentGroup = this.groupsByID[parentGroupId];
+          if (parentGroup) {
+            const index = parentGroup?.subGroups?.findIndex((group: ESPRMGroup) => group.id === id);
+            if (index !== undefined && index !== -1) {
+              parentGroup.subGroups?.splice(index, 1);
+            }
+          }
+        } else
+          delete this.groupsByID[id];
       },
       rollback: (context, prevContext) => {
         const { id } = prevContext;
@@ -246,8 +255,8 @@ class GroupStore {
   }
 
   // Hooks
-  beforeSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => {};
-  afterSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => {};
+  beforeSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => { };
+  afterSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => { };
 
   // Action and helper functions
 
