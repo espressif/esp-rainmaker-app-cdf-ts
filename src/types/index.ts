@@ -136,6 +136,9 @@ import type {
 } from "@espressif/rainmaker-base-sdk";
 import { CDF } from "../store";
 
+// local imports
+import { SceneOperation } from "../utils/constants";
+
 type Interceptor = (
   originalFunction: Function,
   context: any,
@@ -160,6 +163,31 @@ interface CDFconfig {
 
 interface ESPRMAuthWithKeys extends ESPRMAuth {
   [key: string]: Function;
+}
+
+// ========================================================================
+// Scene Interfaces
+// ========================================================================
+
+// Base Scene interface
+interface Scene {
+  id: string;
+  name: string;
+  info?: string;
+  nodes: string[];                    // Array of node IDs where scene is present
+  actions: {                           // Configuration object
+    [key: string]: {                  // Node-specific configuration
+      [key: string]: {                // Device-specific parameters
+        [key: string]: any;           // Parameter values
+      }
+    }
+  };
+  devicesCount: number;
+  callbackUpdateOperation: { [key: string]: SceneOperation }; // Track operation types for each node
+  add: () => Promise<ESPAPIResponse | undefined>;
+  edit: ({ name, actions, info }: { name: string, actions: any, info?: string }) => Promise<ESPAPIResponse | undefined>;
+  remove: () => Promise<ESPAPIResponse | undefined>;
+  activate: () => Promise<ESPAPIResponse | undefined>;
 }
 
 // ========================================================================
@@ -277,4 +305,5 @@ export {
   ESPRMAuth,
   ESPRMAuthWithKeys,
   CDF,
+  Scene,
 };

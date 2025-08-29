@@ -169,6 +169,49 @@ useEffect(() => {
 }, [espCDF.groupStore.groupList]);
 ```
 
+### 5. **Working with Scenes**
+
+Use the `SceneStore` to manage scene data and operations.
+
+#### Example: Fetching Scenes
+
+```javascript
+espCDF.sceneStore.syncScenesFromNodes();
+const scenes = espCDF.sceneStore.sceneList;
+console.log("Scenes:", scenes);
+```
+
+#### Example: Creating and Managing Scenes
+
+```javascript
+// Create a new scene
+const newScene = await espCDF.sceneStore.createScene({
+  name: 'Living Room Scene',
+  nodes: ['node1', 'node2'],
+  actions: {
+    'node1': { light: { power: true, brightness: 80 } },
+    'node2': { fan: { power: false } }
+  }
+});
+
+// Activate a scene
+await espCDF.sceneStore.activateScene('scene123');
+
+// Remove a scene
+const scene = espCDF.sceneStore.getScene('scene123');
+if (scene) await scene.remove();
+```
+
+#### Example: Handling Scene Updates
+
+```javascript
+useEffect(() => {
+  console.groupCollapsed("Scene list updated");
+  console.log(espCDF.sceneStore.sceneList);
+  console.groupEnd();
+}, [espCDF.sceneStore.sceneList]);
+```
+
 ## Resources
 
 - [Changelog](CHANGELOG.md)
