@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v1.1.0]
+
+### Added
+
+- **Scene Management**:
+
+  - Introduced `scenesStore` in `/store` for centralized scene handling.
+  - Implemented `Scene` object in `impls/Scene` with comprehensive functionality:
+    - Scene creation and modification
+    - Scene removal
+    - Scene activation
+  - Added intelligent scene consolidation for multi-node scenes.
+
+### Fixed
+
+- **Group Management**:
+
+  - Enhanced subgroup deletion logic in group store:
+    - Added interceptor to properly remove subgroup references
+    - Improved data consistency across parent groups
+
 ## [v1.0.1] - 2025-04-23
 
 ### Changed

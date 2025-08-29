@@ -17,3 +17,17 @@ export const EVENT_USER_NODE_ADDED = "rmaker.event.user_node_added";
 export const EVENT_USER_NODE_REMOVED = "rmaker.event.user_node_removed";
 export const EVENT_NODE_CONNECTED = "rmaker.event.node_connected";
 export const EVENT_NODE_DISCONNECTED = "rmaker.event.node_disconnected";
+
+// SERIVCE TYPES
+export const ESPRM_SERVICE_SCENES = "esp.service.scenes";
+
+// PARAM TYPES
+export const ESPRM_PARAM_SCENES = "esp.param.scenes";
+
+// SCENE OPERATIONS
+export enum SceneOperation {
+    ADD = "add",
+    EDIT = "edit",
+    REMOVE = "remove",
+    ACTIVATE = "activate"
+}
