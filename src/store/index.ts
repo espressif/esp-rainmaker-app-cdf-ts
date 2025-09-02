@@ -42,7 +42,7 @@ class CDF {
   initialize = async (authInstance: any) => {
     const loggedInUser = await authInstance.getLoggedInUser();
     if (loggedInUser) {
-      this.userStore.setUserInstance(loggedInUser);
+      await this.userStore.setUserInstance(loggedInUser);
     }
   };
 

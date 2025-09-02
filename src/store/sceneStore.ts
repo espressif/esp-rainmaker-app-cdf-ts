@@ -9,7 +9,8 @@ import { observable, action, computed } from "mobx";
 import {
     ESPRMNode,
     ESPRMService,
-    ESPAPIResponse
+    ESPAPIResponse,
+    ESPRMNodeConfig
 } from "../types/index";
 import { ESPRM_SERVICE_SCENES, ESPRM_PARAM_SCENES, SceneOperation } from "../utils/constants";
 import Scene from "../impls/Scene";
@@ -20,7 +21,7 @@ import {
     extendObservable,
     capitalize,
 } from "../utils/common";
-import { SUCCESS } from "../utils/constants";
+import { SUCCESS, NodeUpdateType } from "../utils/constants";
 
 /**
  * SceneStore - Manages scene operations and state for ESP Rainmaker CDF
@@ -143,13 +144,11 @@ class SceneStore {
             else if (operation === SceneOperation.REMOVE) {
                 scenes.splice(scenes.findIndex((scene: any) => scene.id === id), 1);
             }
-
-            this.rootStore?.nodeStore.updateNode(nodeId, {
-                nodeConfig: {
-                    ...node.nodeConfig,
-                    services: nodeServices
-                }
-            });
+            const nodeConfig = {
+                ...node.nodeConfig,
+                services: nodeServices
+            } as ESPRMNodeConfig;
+            this.rootStore?.nodeStore.updateNode(nodeId, nodeConfig, NodeUpdateType.NODE_CONFIG);
         }
 
 

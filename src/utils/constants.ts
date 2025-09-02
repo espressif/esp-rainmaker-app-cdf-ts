@@ -26,8 +26,15 @@ export const ESPRM_PARAM_SCENES = "esp.param.scenes";
 
 // SCENE OPERATIONS
 export enum SceneOperation {
-    ADD = "add",
-    EDIT = "edit",
-    REMOVE = "remove",
-    ACTIVATE = "activate"
+  ADD = "add",
+  EDIT = "edit",
+  REMOVE = "remove",
+  ACTIVATE = "activate"
+}
+
+// NODE UPDATE TYPES
+export enum NodeUpdateType {
+  CONNECTIVITY_STATUS = "connectivityStatus",
+  DEVICE_PARAMS = "deviceParams",
+  NODE_CONFIG = "nodeConfig"
 }

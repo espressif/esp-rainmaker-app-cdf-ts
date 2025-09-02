@@ -8,7 +8,7 @@ import { CDF } from "./index";
 import { observable, action, computed, makeAutoObservable } from "mobx";
 import {
   ESPRMNode,
-  ESPRMDeviceInterface,
+  ESPRMNodeConfig,
   ESPTransportMode,
   ESPTransportConfig,
   ESPNodeSharingRequest,
@@ -20,7 +20,6 @@ import {
   createInterceptor,
   extendObservable,
   capitalize,
-  deepMerge,
 } from "../utils/common";
 import * as constants from "../utils/constants";
 
@@ -187,6 +186,27 @@ class NodeStore {
       node.availableTransports as Record<ESPTransportMode, ESPTransportConfig>
     )[transportDetails.type];
   }
+  // update 
+  #updateNodeConnectivityStatus(node: ESPRMNode, update: { isConnected: boolean }) {
+    if (!node.connectivityStatus) return;
+    node.connectivityStatus.isConnected = update.isConnected;
+  }
+  #updateNodeDeviceParams(node: ESPRMNode, update: Record<string, any>) {
+    const [[deviceName, params]] = Object.entries(update);
+    const device = node.nodeConfig?.devices.find((d: any) => d.name === deviceName);
+    if (device) {
+      // Update each param value
+      Object.entries(params as Record<string, unknown>).forEach(([paramName, value]) => {
+        const param = device?.params?.find((p: any) => p.name === paramName);
+        if (param) {
+          param.value = value;
+        }
+      });
+    }
+  }
+  #updateNodeConfig(node: ESPRMNode, update: ESPRMNodeConfig) {
+    node.nodeConfig = update;
+  }
 
   [key: string]: any;
 
@@ -260,8 +280,8 @@ class NodeStore {
   }
 
   // Hooks
-  beforeSetNodeListHook: (nodes: ESPRMNode[]) => void = () => {};
-  afterSetNodeListHook: (nodes: ESPRMNode[]) => void = () => {};
+  beforeSetNodeListHook: (nodes: ESPRMNode[]) => void = () => { };
+  afterSetNodeListHook: (nodes: ESPRMNode[]) => void = () => { };
 
   // Action and helper functions
 
@@ -298,9 +318,20 @@ class NodeStore {
     return observableNode;
   }
 
-  @action updateNode(nodeId: string, update: any) {
+  @action updateNode(nodeId: string, update: any, type: constants.NodeUpdateType) {
     const node = this.nodesByID[nodeId];
-    deepMerge(node, update);
+    if (!node) return;
+    switch (type) {
+      case constants.NodeUpdateType.CONNECTIVITY_STATUS:
+        this.#updateNodeConnectivityStatus(node, update);
+        break;
+      case constants.NodeUpdateType.DEVICE_PARAMS:
+        this.#updateNodeDeviceParams(node, update);
+        break;
+      case constants.NodeUpdateType.NODE_CONFIG:
+        this.#updateNodeConfig(node, update);
+        break;
+    }
   }
 
   /**
@@ -401,8 +432,8 @@ class NodeStore {
    */
   @action clear() {
     this.nodesByID = {};
-    this.beforesetNodeListHook = () => {};
-    this.aftersetNodeListHook = () => {};
+    this.beforesetNodeListHook = () => { };
+    this.aftersetNodeListHook = () => { };
   }
 
   // Pagination handlers
