@@ -53,13 +53,8 @@ class SubscriptionStore {
         nodeId: string;
         transportDetails: ESPTransportConfig;
       }) => {
-        const deviceStore = this.rootStore?.nodeStore;
-        const device = deviceStore?.nodesByID[nodeId];
-        if (device) {
-          this.rootStore?.nodeStore.updateNodeTransport(
-            nodeId,
-            transportDetails
-          );
+        if (this.rootStore?.nodeStore?._nodesByID[nodeId]) {
+          this.rootStore.nodeStore.updateNodeTransport(nodeId, transportDetails);
         }
       }
     ),
