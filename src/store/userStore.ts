@@ -101,9 +101,9 @@ class UserStore {
     if (this.#rootStore?.sdkInstance && this.#rootStore.config.autoSync) {
       const [userInfo] = await Promise.all([
         this.user?.getUserInfo(),
-        this.#rootStore?.nodeStore.syncNodeList(),
-        this.#rootStore?.groupStore.syncGroupList(),
-        this.#rootStore?.subscriptionStore.subscribeAllListeners(),
+        await this.#rootStore?.nodeStore.syncNodeList(),
+        await this.#rootStore?.groupStore.syncGroupList(),
+        await this.#rootStore?.subscriptionStore.subscribeAllListeners(),
       ]);
       this.userInfo = userInfo || null;
     }
