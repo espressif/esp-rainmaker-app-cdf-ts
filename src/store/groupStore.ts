@@ -538,6 +538,7 @@ class GroupStore {
       withNodeList: true,
       withSubGroups: true,
     });
+    this.groupsByID = {}
     this.processGetGroupsRes(response);
   };
 

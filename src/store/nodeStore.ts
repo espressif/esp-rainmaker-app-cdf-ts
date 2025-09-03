@@ -594,6 +594,7 @@ class NodeStore {
    */
   syncNodeList = async () => {
     let response = await this.rootStore?.userStore.user?.getUserNodes();
+    this.nodesByID = {}
     this.processNodeDetailsRes(response);
   };
 
