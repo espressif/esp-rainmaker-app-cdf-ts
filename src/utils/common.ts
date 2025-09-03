@@ -343,7 +343,7 @@ function handleNodeParamsChanged(
   node_id: string,
   payload: any
 ) {
-  rootStore?.nodeStore?.updateNode(node_id, payload);
+  rootStore?.nodeStore?.updateNode(node_id, payload, constants.NodeUpdateType.DEVICE_PARAMS);
 }
 
 /**
@@ -380,8 +380,8 @@ function handleNodeConnected(
   timestamp: number
 ) {
   rootStore?.nodeStore?.updateNode(node_id, {
-    connectivityStatus: { isConnected: true },
-  });
+    isConnected: true,
+  }, constants.NodeUpdateType.CONNECTIVITY_STATUS);
   rootStore?.nodeStore?.updateNodeTransport(node_id, {
     type: ESPTransportMode.cloud,
     metadata: {},
@@ -397,8 +397,8 @@ function handleNodeDisconnected(
   timestamp: number
 ) {
   rootStore?.nodeStore?.updateNode(node_id, {
-    connectivityStatus: { isConnected: false },
-  });
+    isConnected: false,
+  }, constants.NodeUpdateType.CONNECTIVITY_STATUS);
   rootStore?.nodeStore?.updateNodeTransport(
     node_id,
     { type: ESPTransportMode.cloud, metadata: {} },
