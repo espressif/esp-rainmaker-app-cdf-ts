@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v1.1.1]
+
+> Supports SDK [`v2.0.1`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.1)
+
+### Fixed
+
+- **Transport Updates**:
+  - Corrected node lookup in subscription store transport listener.
+
+- **Node Updates**:
+  - Replaced deepmerge with explicit handlers for devices, params, and config updates.
+
+- **Store Refresh**
+  - Added clearing of node and group stores on first-page sync to avoid stale or duplicate entries.
+
 ## [v1.1.0]
 
 ### Added
