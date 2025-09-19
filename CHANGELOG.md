@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v1.2.0]
+
+> Supports SDK [`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)
+
+### Added
+
+- **Schedule Management**:
+  - Introduced `scheduleStore` for centralized schedule handling
+  - Implemented `Schedule` class with CRUD operations and sync capabilities
+  - Added multi-node schedule reconciliation and validation
+  - Support for time-based, day-based, and recurring schedules
+
+- **Automation Management**:
+  - Introduced `automationStore` for managing smart automations
+  - Added support for weather, daylight, and location-based triggers
+  - Implemented comprehensive automation APIs:
+    - Weather and daylight-based automation creation
+    - Geolocation management for context-aware automations
+    - Multi-node automation handling and synchronization
+  - Added automation update capabilities:
+    - Event and action modifications
+    - Retrigger control and enabled status management
+
 ## [v1.1.1]
 
 > Supports SDK [`v2.0.1`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.1)
