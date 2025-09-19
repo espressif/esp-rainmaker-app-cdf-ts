@@ -23,6 +23,7 @@ import type { ESPRMService } from "@espressif/rainmaker-base-sdk";
 import type { ESPRMServiceParam } from "@espressif/rainmaker-base-sdk";
 import type { ESPRMUser } from "@espressif/rainmaker-base-sdk";
 import type { ESPRMAuth } from "@espressif/rainmaker-base-sdk";
+import type { ESPAutomation } from "@espressif/rainmaker-base-sdk";
 
 // discovery
 import type { ESPDiscoveryProtocol } from "@espressif/rainmaker-base-sdk";
@@ -134,6 +135,32 @@ import type {
   ESPTransportConfig,
   ESPTransportInterface,
 } from "@espressif/rainmaker-base-sdk";
+
+// Automation enums
+import {
+  ESPAutomationConditionOperator,
+  ESPAutomationEventOperator,
+  ESPAutomationEventType,
+  ESPWeatherParameter,
+  ESPWeatherCondition,
+  ESPDaylightEvent,
+} from "@espressif/rainmaker-base-sdk";
+
+// Automation types
+import type {
+  ESPAutomationEvent,
+  ESPWeatherEvent,
+  ESPAutomationAction,
+  ESPAutomationDetails,
+  ESPGeoCoordinates,
+  ESPWeatherAutomationDetails,
+  ESPDaylightAutomationDetails,
+  ESPAutomationUpdateDetails,
+  ESPAutomationInterface,
+  ESPRawAutomationResponse,
+  ESPPaginatedAutomationsResponse,
+} from "@espressif/rainmaker-base-sdk";
+
 import { CDF } from "../store";
 
 // local imports
@@ -174,18 +201,29 @@ interface Scene {
   id: string;
   name: string;
   info?: string;
-  nodes: string[];                    // Array of node IDs where scene is present
-  actions: {                           // Configuration object
-    [key: string]: {                  // Node-specific configuration
-      [key: string]: {                // Device-specific parameters
-        [key: string]: any;           // Parameter values
-      }
-    }
+  nodes: string[]; // Array of node IDs where scene is present
+  actions: {
+    // Configuration object
+    [key: string]: {
+      // Node-specific configuration
+      [key: string]: {
+        // Device-specific parameters
+        [key: string]: any; // Parameter values
+      };
+    };
   };
   devicesCount: number;
   callbackUpdateOperation: { [key: string]: SceneOperation }; // Track operation types for each node
   add: () => Promise<ESPAPIResponse | undefined>;
-  edit: ({ name, actions, info }: { name: string, actions: any, info?: string }) => Promise<ESPAPIResponse | undefined>;
+  edit: ({
+    name,
+    actions,
+    info,
+  }: {
+    name: string;
+    actions: any;
+    info?: string;
+  }) => Promise<ESPAPIResponse | undefined>;
   remove: () => Promise<ESPAPIResponse | undefined>;
   activate: () => Promise<ESPAPIResponse | undefined>;
 }
@@ -306,4 +344,22 @@ export {
   ESPRMAuthWithKeys,
   CDF,
   Scene,
+  ESPAutomationConditionOperator,
+  ESPAutomationEventOperator,
+  ESPAutomationEventType,
+  ESPWeatherParameter,
+  ESPWeatherCondition,
+  ESPDaylightEvent,
+  ESPGeoCoordinates,
+  ESPAutomationEvent,
+  ESPWeatherEvent,
+  ESPAutomationAction,
+  ESPAutomationDetails,
+  ESPWeatherAutomationDetails,
+  ESPDaylightAutomationDetails,
+  ESPAutomation,
+  ESPAutomationUpdateDetails,
+  ESPAutomationInterface,
+  ESPRawAutomationResponse,
+  ESPPaginatedAutomationsResponse,
 };

@@ -10,15 +10,21 @@ import GroupStore from "./groupStore";
 import SubscriptionStore from "./subscriptionStore";
 import SceneStore from "./sceneStore";
 
+import AutomationStore from "./automationStore";
 import { observable, action } from "mobx";
 import { CDFconfig, ESPRMBaseConfig } from "../types";
 import { ESPRMBase } from "@espressif/rainmaker-base-sdk";
 import * as constants from "../utils/constants";
 
-
 /**
  * The root store that manages all individual stores.
- * GPT Context: This class serves as the root store, providing a single point of access to all individual stores within the application. It initializes and manages instances of UserStore, DeviceStore, GroupStore, and SubscriptionStore.
+ * GPT Context: This class serves as the root store, providing a single point of access to all individual stores within the application.
+ * It initializes and manages following instances of stores:
+ * - UserStore
+ * - DeviceStore
+ * - GroupStore
+ * - SubscriptionStore
+ * - AutomationStore
  */
 class CDF {
   #config: CDFconfig = {};
@@ -29,6 +35,7 @@ class CDF {
   @observable accessor sceneStore: SceneStore;
   @observable accessor subscriptionStore: SubscriptionStore;
 
+  @observable accessor automationStore: AutomationStore;
 
   constructor(sdkInstance: any) {
     this.sdkInstance = sdkInstance || null;
@@ -37,6 +44,7 @@ class CDF {
     this.userStore = new UserStore(this);
     this.subscriptionStore = new SubscriptionStore(this);
     this.sceneStore = new SceneStore(this);
+    this.automationStore = new AutomationStore(this);
   }
 
   initialize = async (authInstance: any) => {
