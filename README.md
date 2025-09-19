@@ -169,6 +169,8 @@ useEffect(() => {
 }, [espCDF.groupStore.groupList]);
 ```
 
+---
+
 ### 5. **Working with Scenes**
 
 Use the `SceneStore` to manage scene data and operations.
@@ -186,19 +188,19 @@ console.log("Scenes:", scenes);
 ```javascript
 // Create a new scene
 const newScene = await espCDF.sceneStore.createScene({
-  name: 'Living Room Scene',
-  nodes: ['node1', 'node2'],
+  name: "Living Room Scene",
+  nodes: ["node1", "node2"],
   actions: {
-    'node1': { light: { power: true, brightness: 80 } },
-    'node2': { fan: { power: false } }
-  }
+    node1: { light: { power: true, brightness: 80 } },
+    node2: { fan: { power: false } },
+  },
 });
 
 // Activate a scene
-await espCDF.sceneStore.activateScene('scene123');
+await espCDF.sceneStore.activateScene("scene123");
 
 // Remove a scene
-const scene = espCDF.sceneStore.getScene('scene123');
+const scene = espCDF.sceneStore.getScene("scene123");
 if (scene) await scene.remove();
 ```
 
@@ -210,6 +212,61 @@ useEffect(() => {
   console.log(espCDF.sceneStore.sceneList);
   console.groupEnd();
 }, [espCDF.sceneStore.sceneList]);
+```
+
+---
+
+### 6. **Working with Schedules**
+
+Use the `ScheduleStore` to manage time-based device operations.
+
+```javascript
+// Create a schedule
+const schedule = await espCDF.scheduleStore.createSchedule({
+  name: "Morning Routine",
+  nodes: ["bedroom_light"],
+  action: {
+    bedroom_light: { light: { power: true } }
+  },
+  triggers: [{ m: 420, d: 127 }] // 7:00 AM daily
+});
+
+// Manage schedules
+const schedules = espCDF.scheduleStore.scheduleList;
+await espCDF.scheduleStore.enableSchedule("schedule123");
+await espCDF.scheduleStore.disableSchedule("schedule123");
+
+// Handle updates
+useEffect(() => {
+  console.log("Schedules updated:", espCDF.scheduleStore.scheduleList);
+}, [espCDF.scheduleStore.scheduleList]);
+```
+
+---
+
+### 7. **Working with Automations**
+
+Use the `AutomationStore` to manage context-aware automations.
+
+```javascript
+// Access automations by type
+const allAutomations = espCDF.automationStore.automationList;
+const weatherAutomations = espCDF.automationStore.weatherAutomationList;
+const daylightAutomations = espCDF.automationStore.daylightAutomationList;
+
+// Manage automations
+const nodeAutomations = espCDF.automationStore.getAutomationsByNodeId("node123");
+const locationAutomations = espCDF.automationStore.getWeatherAutomationsByLocation({
+  latitude: 37.7749,
+  longitude: -122.4194
+});
+
+// Update automation
+const automation = espCDF.automationStore.getAutomationById("automation123");
+if (automation) {
+  await automation.updateName("New Name");
+  await automation.enable(true);
+}
 ```
 
 ## Resources

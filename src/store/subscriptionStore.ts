@@ -54,7 +54,10 @@ class SubscriptionStore {
         transportDetails: ESPTransportConfig;
       }) => {
         if (this.rootStore?.nodeStore?._nodesByID[nodeId]) {
-          this.rootStore.nodeStore.updateNodeTransport(nodeId, transportDetails);
+          this.rootStore.nodeStore.updateNodeTransport(
+            nodeId,
+            transportDetails
+          );
         }
       }
     ),
