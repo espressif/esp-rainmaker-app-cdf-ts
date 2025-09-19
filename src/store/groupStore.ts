@@ -96,13 +96,14 @@ class GroupStore {
         if (parentGroupId) {
           const parentGroup = this.groupsByID[parentGroupId];
           if (parentGroup) {
-            const index = parentGroup?.subGroups?.findIndex((group: ESPRMGroup) => group.id === id);
+            const index = parentGroup?.subGroups?.findIndex(
+              (group: ESPRMGroup) => group.id === id
+            );
             if (index !== undefined && index !== -1) {
               parentGroup.subGroups?.splice(index, 1);
             }
           }
-        } else
-          delete this.groupsByID[id];
+        } else delete this.groupsByID[id];
       },
       rollback: (context, prevContext) => {
         const { id } = prevContext;
@@ -255,8 +256,8 @@ class GroupStore {
   }
 
   // Hooks
-  beforeSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => { };
-  afterSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => { };
+  beforeSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => {};
+  afterSetGroupListHook: (nodes: ESPRMGroup[]) => void = () => {};
 
   // Action and helper functions
 
@@ -538,7 +539,7 @@ class GroupStore {
       withNodeList: true,
       withSubGroups: true,
     });
-    this.groupsByID = {}
+    this.groupsByID = {};
     this.processGetGroupsRes(response);
   };
 

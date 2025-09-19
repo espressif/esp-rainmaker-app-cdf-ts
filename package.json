@@ -2,7 +2,7 @@
   "name": "@espressif/rainmaker-base-cdf",
   "description": "The esp-rainmaker base cdf",
   "author": "Espressif Systems (Shanghai) CO LTD",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,7 +34,7 @@
     "esp-rainmaker-app-cdf"
   ],
   "devDependencies": {
-    "@espressif/rainmaker-base-sdk": "^2.0.1",
+    "@espressif/rainmaker-base-sdk": "^2.0.4",
     "@types/jest": "^29.5.13",
     "jest": "^29.7.0",
     "prettier": "^3.3.3",
@@ -43,6 +43,6 @@
     "typescript": "^5.7.2"
   },
   "peerDependencies": {
-    "@espressif/rainmaker-base-sdk": "^2.0.1"
+    "@espressif/rainmaker-base-sdk": "^2.0.4"
   }
 }

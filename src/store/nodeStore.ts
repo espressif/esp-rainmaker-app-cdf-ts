@@ -13,6 +13,8 @@ import {
   ESPTransportConfig,
   ESPNodeSharingRequest,
   ESPPaginatedNodesResponse,
+  ESPAutomation,
+  ESPPaginatedAutomationsResponse,
 } from "../types/index";
 import {
   makeEverythingObservable,
@@ -115,6 +117,18 @@ class NodeStore {
       },
     });
 
+    const addAutomationInterceptor = createInterceptor({
+      onSuccess: (result: ESPAutomation, args, context) => {
+        return this.rootStore?.automationStore.addAutomation(result);
+      },
+    });
+
+    const getNodeAutomationsInterceptor = createInterceptor({
+      onSuccess: (result: ESPPaginatedAutomationsResponse, args, context) => {
+        return this.rootStore?.automationStore.processAutomationsRes(result);
+      },
+    });
+
     proxyActionHandler(
       node,
       "nodeConfig.devices.getParams",
@@ -134,6 +148,8 @@ class NodeStore {
     proxyActionHandler(node, "getNodeConfig", getNodeConfigInterceptor);
     proxyActionHandler(node, "getServices", getServicesInterceptor);
     proxyActionHandler(node, "delete", deleteInterceptor);
+    proxyActionHandler(node, "addAutomation", addAutomationInterceptor);
+    proxyActionHandler(node, "getAutomations", getNodeAutomationsInterceptor);
   }
   #interceptProxySharingRequest(
     sharingRequest: ESPNodeSharingRequest,
@@ -186,22 +202,29 @@ class NodeStore {
       node.availableTransports as Record<ESPTransportMode, ESPTransportConfig>
     )[transportDetails.type];
   }
-  // update 
-  #updateNodeConnectivityStatus(node: ESPRMNode, update: { isConnected: boolean }) {
+  // update
+  #updateNodeConnectivityStatus(
+    node: ESPRMNode,
+    update: { isConnected: boolean }
+  ) {
     if (!node.connectivityStatus) return;
     node.connectivityStatus.isConnected = update.isConnected;
   }
   #updateNodeDeviceParams(node: ESPRMNode, update: Record<string, any>) {
     const [[deviceName, params]] = Object.entries(update);
-    const device = node.nodeConfig?.devices.find((d: any) => d.name === deviceName);
+    const device = node.nodeConfig?.devices.find(
+      (d: any) => d.name === deviceName
+    );
     if (device) {
       // Update each param value
-      Object.entries(params as Record<string, unknown>).forEach(([paramName, value]) => {
-        const param = device?.params?.find((p: any) => p.name === paramName);
-        if (param) {
-          param.value = value;
+      Object.entries(params as Record<string, unknown>).forEach(
+        ([paramName, value]) => {
+          const param = device?.params?.find((p: any) => p.name === paramName);
+          if (param) {
+            param.value = value;
+          }
         }
-      });
+      );
     }
   }
   #updateNodeConfig(node: ESPRMNode, update: ESPRMNodeConfig) {
@@ -280,8 +303,8 @@ class NodeStore {
   }
 
   // Hooks
-  beforeSetNodeListHook: (nodes: ESPRMNode[]) => void = () => { };
-  afterSetNodeListHook: (nodes: ESPRMNode[]) => void = () => { };
+  beforeSetNodeListHook: (nodes: ESPRMNode[]) => void = () => {};
+  afterSetNodeListHook: (nodes: ESPRMNode[]) => void = () => {};
 
   // Action and helper functions
 
@@ -318,7 +341,11 @@ class NodeStore {
     return observableNode;
   }
 
-  @action updateNode(nodeId: string, update: any, type: constants.NodeUpdateType) {
+  @action updateNode(
+    nodeId: string,
+    update: any,
+    type: constants.NodeUpdateType
+  ) {
     const node = this.nodesByID[nodeId];
     if (!node) return;
     switch (type) {
@@ -432,8 +459,8 @@ class NodeStore {
    */
   @action clear() {
     this.nodesByID = {};
-    this.beforesetNodeListHook = () => { };
-    this.aftersetNodeListHook = () => { };
+    this.beforesetNodeListHook = () => {};
+    this.aftersetNodeListHook = () => {};
   }
 
   // Pagination handlers
@@ -594,7 +621,7 @@ class NodeStore {
    */
   syncNodeList = async () => {
     let response = await this.rootStore?.userStore.user?.getUserNodes();
-    this.nodesByID = {}
+    this.nodesByID = {};
     this.processNodeDetailsRes(response);
   };
 
