@@ -405,3 +405,64 @@ function handleNodeDisconnected(
     "remove"
   );
 }
+
+
+/**
+ * Compares two arrays of objects and checks if all objects in array1 exist in array2
+ * 
+ * @param array1 First array to compare
+ * @param array2 Second array to compare against
+ * @param key Optional key to use for faster comparison instead of full object comparison
+ * @returns True if all objects in array1 exist in array2, false otherwise
+ * 
+ * @example
+ * // With key comparison
+ * compareArrays([{id: 1}, {id: 2}], [{id: 1}, {id: 2}, {id: 3}], 'id') // true
+ * 
+ * // With full object comparison
+ * compareArrays([{x: 1}, {x: 2}], [{x: 1}, {x: 2}, {x: 3}]) // true
+ */
+export function compareArrays<T extends Record<string, any>>(
+  array1: T[],
+  array2: T[],
+  key?: keyof T
+): boolean {
+  if (array1.length === 0) return true;  // Empty array1 is always contained
+  if (array2.length === 0) return false; // array2 empty → cannot contain array1
+
+  if (key) {
+    const set2 = new Set(array2.map(obj => obj[key]));
+    return array1.every(obj => obj[key] !== undefined && set2.has(obj[key]));
+  }
+
+  return array1.every(obj1 =>
+    array2.some(obj2 => JSON.stringify(obj1) === JSON.stringify(obj2))
+  );
+}
+
+
+/**
+ * Compares two objects deeply and checks if they are equal.
+ * @param a The first object to compare.
+ * @param b The second object to compare.
+ * @returns True if the objects are equal, false otherwise.
+ */
+export function isEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
+    return false;
+  }
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  for (let key of keysA) {
+    if (!keysB.includes(key)) return false;
+    if (!isEqual(a[key], b[key])) return false;
+  }
+
+  return true;
+}

@@ -22,9 +22,11 @@ export const EVENT_NODE_DISCONNECTED = "rmaker.event.node_disconnected";
 
 // SERIVCE TYPES
 export const ESPRM_SERVICE_SCENES = "esp.service.scenes";
+export const ESPRM_SERVICE_SCHEDULES = "esp.service.schedule";
 
 // PARAM TYPES
 export const ESPRM_PARAM_SCENES = "esp.param.scenes";
+export const ESPRM_PARAM_SCHEDULES = "esp.param.schedules";
 
 // SCENE OPERATIONS
 export enum SceneOperation {
@@ -32,6 +34,15 @@ export enum SceneOperation {
   EDIT = "edit",
   REMOVE = "remove",
   ACTIVATE = "activate",
+}
+
+export enum ScheduleOperation {
+  ADD = "add",
+  EDIT = "edit",
+  REMOVE = "remove",
+  DISABLE = "disable",
+  ENABLE = "enable",
+  NO_CHANGE = "no_change"
 }
 
 // NODE UPDATE TYPES
