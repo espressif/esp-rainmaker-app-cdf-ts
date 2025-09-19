@@ -23,7 +23,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - **Scene Management**:
-
   - Introduced `scenesStore` in `/store` for centralized scene handling.
   - Implemented `Scene` object in `impls/Scene` with comprehensive functionality:
     - Scene creation and modification
@@ -34,7 +33,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - **Group Management**:
-
   - Enhanced subgroup deletion logic in group store:
     - Added interceptor to properly remove subgroup references
     - Improved data consistency across parent groups
@@ -44,11 +42,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 
 - **Version Upgrade**:
-
   - Bumped `@espressif/rainmaker-base-sdk` from v1.0.0 to v1.0.1.
 
 - **Code Updates**:
-
   - Improved imports to ensure compatibility with the updated SDK.
 
 ## [v1.0.0] - 2025-01-28
@@ -56,7 +52,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - **Reactive State Management**:
-
   - Introduced predefined MobX-based stores for seamless state synchronization:
     - `GroupStore`
     - `NodeStore`
@@ -64,19 +59,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - `SubscriptionStore`
 
 - **Backend Integration**:
-
   - Automated API sync via `@espressif/rainmaker-base-sdk` for real-time updates.
 
 - **Effortless Initialization**:
-
   - Minimal setup required for SDK and CDF integration.
 
 - **Unified Data Flow**:
-
   - Centralized, reactive layer for managing RainMaker backend services.
 
 - **Modular and Scalable**:
-
   - Supports both simple and complex applications with extensibility.
 
 This release establishes a solid foundation for scalable **ESP RainMaker** app development.

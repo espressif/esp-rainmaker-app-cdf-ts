@@ -201,7 +201,6 @@ interface Scene {
   id: string;
   name: string;
   info?: string;
-<<<<<<< HEAD
   nodes: string[]; // Array of node IDs where scene is present
   actions: {
     // Configuration object
@@ -212,15 +211,6 @@ interface Scene {
         [key: string]: any; // Parameter values
       };
     };
-=======
-  nodes: string[];                 // Array of node IDs where scene is present
-  actions: {                       // Configuration object
-    [key: string]: {               // Node-specific configuration
-      [key: string]: {             // Device-specific parameters
-        [key: string]: any;        // Parameter values
-      }
-    }
->>>>>>> 6c58cd4 (Feature: Add schedule store)
   };
   devicesCount: number;
   callbackUpdateOperation: { [key: string]: SceneOperation }; // Track operation types for each node
@@ -243,14 +233,14 @@ interface Scene {
 // ========================================================================
 
 type ScheduleTrigger = {
-  m?: number;         // Minutes since midnight (uint16)
-  d?: number;         // Bitmap for days, LSB is Monday (uint8)
-  dd?: number;        // Date 1-31 (uint8)
-  mm?: number;        // Bitmap for months, LSB is January (uint16)
-  yy?: number;        // Year, e.g. 2023 (uint16)
-  r?: boolean;        // Repeat yearly flag
-  rsec?: number;      // Relative seconds from now (int32)
-}
+  m?: number; // Minutes since midnight (uint16)
+  d?: number; // Bitmap for days, LSB is Monday (uint8)
+  dd?: number; // Date 1-31 (uint8)
+  mm?: number; // Bitmap for months, LSB is January (uint16)
+  yy?: number; // Year, e.g. 2023 (uint16)
+  r?: boolean; // Repeat yearly flag
+  rsec?: number; // Relative seconds from now (int32)
+};
 
 interface ScheduleAction {
   [key: string]: {
@@ -290,19 +280,29 @@ interface Schedule {
     info,
     flags,
     validity,
-  }: ScheduleEditParams) => Promise<ESPAPIResponse | undefined | MultiNodeResponsePayload[]>;
-  remove: () => Promise<ESPAPIResponse | undefined | MultiNodeResponsePayload[]>;
-  disable: () => Promise<ESPAPIResponse | undefined | MultiNodeResponsePayload[]>;
-  enable: () => Promise<ESPAPIResponse | undefined | MultiNodeResponsePayload[]>;
+  }: ScheduleEditParams) => Promise<
+    ESPAPIResponse | undefined | MultiNodeResponsePayload[]
+  >;
+  remove: () => Promise<
+    ESPAPIResponse | undefined | MultiNodeResponsePayload[]
+  >;
+  disable: () => Promise<
+    ESPAPIResponse | undefined | MultiNodeResponsePayload[]
+  >;
+  enable: () => Promise<
+    ESPAPIResponse | undefined | MultiNodeResponsePayload[]
+  >;
 }
 
 interface SchedulePayload {
   nodeId: string;
   payload: {
-    Schedule: [{
-      Schedules: [Record<string, any>]
-    }]
-  }
+    Schedule: [
+      {
+        Schedules: [Record<string, any>];
+      },
+    ];
+  };
 }
 
 interface ScheduleOperationParams {
@@ -316,14 +316,14 @@ interface ScheduleOperationParams {
 }
 
 interface ScheduleGeneratePayloadParams {
-  action: ScheduleAction,
-  nodeId: string,
-  triggers: ScheduleTrigger[],
-  scheduleId: string,
-  scheduleName: string,
-  info?: string | null,
-  flags?: number | null,
-  validity?: { start: number; end: number } | null
+  action: ScheduleAction;
+  nodeId: string;
+  triggers: ScheduleTrigger[];
+  scheduleId: string;
+  scheduleName: string;
+  info?: string | null;
+  flags?: number | null;
+  validity?: { start: number; end: number } | null;
 }
 
 interface updateNodeScheduleParams {
@@ -459,7 +459,6 @@ export {
   CDFconfig,
   ESPRMAuth,
   ESPRMAuthWithKeys,
-
   CDF,
   Scene,
   ESPAutomationConditionOperator,
@@ -488,5 +487,5 @@ export {
   ScheduleOperationParams,
   ScheduleGeneratePayloadParams,
   updateNodeScheduleParams,
-  MultiNodeResponsePayload
+  MultiNodeResponsePayload,
 };

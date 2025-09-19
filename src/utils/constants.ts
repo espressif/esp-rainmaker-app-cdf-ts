@@ -42,7 +42,7 @@ export enum ScheduleOperation {
   REMOVE = "remove",
   DISABLE = "disable",
   ENABLE = "enable",
-  NO_CHANGE = "no_change"
+  NO_CHANGE = "no_change",
 }
 
 // NODE UPDATE TYPES

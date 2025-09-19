@@ -186,19 +186,19 @@ console.log("Scenes:", scenes);
 ```javascript
 // Create a new scene
 const newScene = await espCDF.sceneStore.createScene({
-  name: 'Living Room Scene',
-  nodes: ['node1', 'node2'],
+  name: "Living Room Scene",
+  nodes: ["node1", "node2"],
   actions: {
-    'node1': { light: { power: true, brightness: 80 } },
-    'node2': { fan: { power: false } }
-  }
+    node1: { light: { power: true, brightness: 80 } },
+    node2: { fan: { power: false } },
+  },
 });
 
 // Activate a scene
-await espCDF.sceneStore.activateScene('scene123');
+await espCDF.sceneStore.activateScene("scene123");
 
 // Remove a scene
-const scene = espCDF.sceneStore.getScene('scene123');
+const scene = espCDF.sceneStore.getScene("scene123");
 if (scene) await scene.remove();
 ```
 
