@@ -125,6 +125,9 @@ class NodeStore {
 
     const getNodeAutomationsInterceptor = createInterceptor({
       onSuccess: (result: ESPPaginatedAutomationsResponse, args, context) => {
+        if (this.rootStore?.automationStore) {
+          this.rootStore.automationStore.nodeAutomations = {};
+        }
         return this.rootStore?.automationStore.processAutomationsRes(result);
       },
     });
@@ -620,9 +623,11 @@ class NodeStore {
    * GPT Context: This function fetches the list of nodes from the cloud and updates the store with the latest data.
    */
   syncNodeList = async () => {
-    let response = await this.rootStore?.userStore.user?.getUserNodes();
-    this.nodesByID = {};
-    this.processNodeDetailsRes(response);
+    // Interceptor of getUserNodes will do following:
+    // 1. Set the node list empty
+    // 2. Process the node details response
+    // 3. Set the node list with the processed node details
+    await this.rootStore?.userStore.user?.getUserNodes();
   };
 
   // Store customizations helpers

@@ -535,12 +535,14 @@ class GroupStore {
    * @returns {Promise<void>} A promise that resolves when the group list has been synchronized.
    */
   syncGroupList = async () => {
-    let response = await this.rootStore?.userStore.user?.getGroups({
+    // Interceptor of getGroups will do following:
+    // 1. Set the group list empty
+    // 2. Process the group details response
+    // 3. Set the group list with the processed group details
+    await this.rootStore?.userStore.user?.getGroups({
       withNodeList: true,
       withSubGroups: true,
     });
-    this.groupsByID = {};
-    this.processGetGroupsRes(response);
   };
 
   // Store customizations helpers
