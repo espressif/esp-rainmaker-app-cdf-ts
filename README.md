@@ -178,7 +178,8 @@ Use the `SceneStore` to manage scene data and operations.
 #### Example: Fetching Scenes
 
 ```javascript
-espCDF.sceneStore.syncScenesFromNodes();
+// Sync scenes from specific nodes
+await espCDF.sceneStore.syncScenesFromNodes(['node1', 'node2']);
 const scenes = espCDF.sceneStore.sceneList;
 console.log("Scenes:", scenes);
 ```

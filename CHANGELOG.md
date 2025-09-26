@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v1.2.1]
+
+> Supports SDK [`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)
+
+### Fixed
+
+- **Scene Synchronization**: `syncScenesFromNodes` now requires `nodeIds` and transforms scenes only for specified nodes. Updated README with async usage example.  
+- **Pagination**: Fixed `fetchNext` handling in `NodeStore`, `GroupStore`, and `AutomationStore` to ensure consistent pagination.
+
+
 ## [v1.2.0]
 
 > Supports SDK [`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)

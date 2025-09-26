@@ -344,6 +344,7 @@ class UserStore {
     });
     const getGroupsInterceptor = createInterceptor({
       onSuccess: (result: any, args) => {
+        this.#rootStore?.groupStore.setGroupList([]);
         return this.#rootStore?.groupStore.processGetGroupsRes(result);
       },
     });
@@ -376,11 +377,12 @@ class UserStore {
     });
     const getUserNodesInterceptor = createInterceptor({
       onSuccess: (result: any, args) => {
-        return this.#rootStore?.nodeStore.processNodeDetailsRes(result);
+        return result;
       },
     });
     const getUserNodesWithInterceptors = createInterceptor({
       onSuccess: (result: any, args) => {
+        this.#rootStore?.nodeStore.setNodeList([]);
         return this.#rootStore?.nodeStore.processNodeDetailsRes(result);
       },
     });
@@ -402,6 +404,7 @@ class UserStore {
     // Automation Interceptors
     const getAutomationsInterceptor = createInterceptor({
       onSuccess: (result: ESPPaginatedAutomationsResponse, args) => {
+        this.#rootStore?.automationStore.setAutomationList([]);
         return this.#rootStore?.automationStore.processAutomationsRes(result);
       },
     });
