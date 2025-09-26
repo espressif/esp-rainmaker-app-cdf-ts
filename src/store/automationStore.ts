@@ -482,14 +482,16 @@ class AutomationStore {
    * Syncs the automation list from the cloud.
    */
   syncAutomationList = async () => {
+    // Interceptor of getAutomations will do following:
+    // 1. Set the automation list empty
+    // 2. Process the automation response
+    // 3. Set the automation list with the processed automation response
     if (!this.rootStore?.userStore.user) {
       throw new Error(constants.USER_NOT_LOGGED_IN_ERR);
     }
     try {
       const user = this.rootStore.userStore.user;
-      const response = await user.getAutomations();
-      this.clear();
-      return this.processAutomationsRes(response);
+      await user.getAutomations();
     } catch (error) {
       throw error;
     }

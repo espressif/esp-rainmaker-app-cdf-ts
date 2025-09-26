@@ -183,6 +183,7 @@ class SceneStore {
         delete this._scenesByID[context.id];
       },
       onSuccess: (result, args, context) => {
+        const nodeList: string[] = [];
         result.forEach((response: ESPAPIResponse) => {
           const { node_id, status } = response as any;
           if (status === SUCCESS) {
@@ -195,8 +196,9 @@ class SceneStore {
               operation: SceneOperation.ADD,
             });
           }
+          nodeList.push(node_id);
         });
-        this.syncScenesFromNodes();
+        this.syncScenesFromNodes(nodeList);
         return result;
       },
     });
@@ -232,6 +234,7 @@ class SceneStore {
         this._scenesByID[prevContext.id] = prevContext;
       },
       onSuccess: (result, args, context) => {
+        const nodeList: string[] = [];
         result.forEach((response: ESPAPIResponse) => {
           const { node_id, status } = response as any;
           if (status === SUCCESS) {
@@ -245,9 +248,10 @@ class SceneStore {
               operation: operation,
             });
           }
+          nodeList.push(node_id);
         });
         this._scenesByID[context.id].callbackUpdateOperation = {};
-        this.syncScenesFromNodes();
+        this.syncScenesFromNodes(nodeList);
         return result;
       },
     });
@@ -262,6 +266,7 @@ class SceneStore {
         this._scenesByID[prevContext.id] = prevContext;
       },
       onSuccess: (result, args, context) => {
+        const nodeList: string[] = [];
         result.forEach((response: ESPAPIResponse) => {
           const { node_id, status } = response as any;
           if (status === SUCCESS) {
@@ -272,6 +277,7 @@ class SceneStore {
             });
             delete this._scenesByID[context.id].actions[node_id];
           }
+          nodeList.push(node_id);
         });
 
         if (
@@ -281,7 +287,7 @@ class SceneStore {
         ) {
           delete this._scenesByID[context.id];
         } else {
-          this.syncScenesFromNodes();
+          this.syncScenesFromNodes(nodeList);
         }
         return result;
       },
@@ -475,22 +481,25 @@ class SceneStore {
   }
 
   /**
-   * Synchronizes scenes from node configurations
+   * Synchronizes scenes from specified nodes
    *
-   * This method fetches all nodes from the NodeStore, transforms them into scenes,
-   * and merges them with existing scenes in the store. It preserves any custom
-   * data on existing scenes while updating them with new node information.
+   * This action method:
+   * 1. Clears existing scenes from the store
+   * 2. Fetches scene configurations from specified nodes
+   * 3. Transforms node configurations into Scene instances
+   * 4. Updates the store with synchronized scenes
    *
+   * @param {string[]} nodeIds - Array of node IDs to sync scenes from
    * @returns {Promise<void>}
    * @throws {Error} If synchronization fails
-   *
-   * @example
-   * await sceneStore.syncScenesFromNodes();
    */
-  @action syncScenesFromNodes = async (): Promise<void> => {
+  @action syncScenesFromNodes = async (nodeIds: string[]): Promise<void> => {
     try {
       this.clear();
-      const nodeList = this.rootStore?.nodeStore.nodeList || [];
+      const nodeList =
+        this.rootStore?.nodeStore.nodeList.filter((node) =>
+          nodeIds.includes(node.id)
+        ) || [];
       const transformedScenes = this.#transformNodeListToScenes(nodeList);
       // Merge with existing scenes, preserving any custom data
       Object.keys(transformedScenes).forEach((sceneId) => {
