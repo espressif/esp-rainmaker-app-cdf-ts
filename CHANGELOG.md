@@ -3,14 +3,35 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
-## [v1.2.1]
+## [v2.0.0]
 
-> Supports SDK [`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)
+> Major CDF revamp with a unified, SDK-agnostic architecture.
+> Includes support for RainMaker base SDK adapter ([`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)).
+
+### Added
+
+- **Unified CDF Layer**:
+  - Re-architected CDF as a unified abstraction layer that can adapt to multiple SDK implementations.
+  - Standardized integration points to support pluggable SDK adapters.
+
+- **Entities Layer**:
+  - Added the `entities`-driven engine layer (`src/entities`) as the app-facing abstraction.
+  - Provides a unified contract for applications to consume CDF capabilities consistently across SDK adapters.
+
+- **SDK Registry Layer**:
+  - Added an SDK registry mechanism to register, resolve, and switch SDK adapters consistently.
+  - Enabled clearer separation between CDF domain logic and SDK-specific transport/runtime behavior.
+
+### Changed
+
+- **Architecture**:
+  - This release is a complete architectural overhaul of CDF and is published as a major version (`v2.0.0`).
+  - Existing integrations may require migration to the new unified layer and registry-driven SDK setup.
 
 ### Fixed
 
-- **Scene Synchronization**: `syncScenesFromNodes` now requires `nodeIds` and transforms scenes only for specified nodes. Updated README with async usage example.  
-- **Pagination**: Fixed `fetchNext` handling in `NodeStore`, `GroupStore`, and `AutomationStore` to ensure consistent pagination.
+- **Scene Synchronization**: `syncScenesFromNodes` requires `nodeIds` and transforms scenes only for specified nodes.
+- **Pagination**: `fetchNext` handling in `NodeStore`, `GroupStore`, and `AutomationStore` is now consistent.
 
 
 ## [v1.2.0]

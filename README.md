@@ -1,278 +1,156 @@
-# ESP Rainmaker Typescript Base CDF
+# ESP RainMaker TypeScript Base — CDF
 
-The **@espressif/rainmaker-base-cdf** package is a reactive state management library for Rainmaker applications, built on MobX, offering seamless state synchronization through predefined stores (`GroupStore`, `NodeStore`, `UserStore`, `SubscriptionStore`). It automatically updates with backend API calls via **@espressif/rainmaker-base-sdk**, ensuring efficient data flow and real-time reactivity
+`@espressif/rainmaker-base-cdf` is **CDF** for RainMaker apps. It provides one app-facing contract across adaptor implementations: unified entities, adaptor registration, event-driven operations, and MobX-backed stores coordinated by synchronizers.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Key Features](#key-features)
-- [Requirements](#requirements)
+- [How CDF is structured](#how-cdf-is-structured)
+- [Architecture at a glance](#architecture-at-a-glance)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Quick Start](#quick-start)
+- [Core responsibilities](#core-responsibilities)
 - [Resources](#resources)
 - [License](#license)
-- [API Documentation](https://espressif.github.io/esp-rainmaker-app-cdf-ts/)
 
 ---
 
 ## Overview
 
-The `@espressif/rainmaker-base-cdf` package is a reactive state management library designed for Rainmaker applications. Built with MobX at its core, it provides a seamless and efficient way to manage and synchronize application state through its predefined stores: `GroupStore`, `NodeStore`, `UserStore`, and `SubscriptionStore`. These stores automatically update when backend APIs are called through the `@espressif/rainmaker-base-sdk` package, ensuring robust data handling and communication. This simplifies data flow and keeps your application effortlessly reactive and up-to-date.
+CDF lets apps integrate **multiple adaptors** through a **single, consistent model**:
+
+- **Unified entities** (`ESPCDFNode`, `ESPCDFGroup`, `ESPCDFUser`, …) in [`src/entities`](src/entities) — the app contract; apps work with CDF types, not raw adaptor-specific types.
+- **Adaptor registry** — register and switch implementations via [`src/registry.ts`](src/registry.ts) (`AdaptorRegistry`, capabilities, active adaptor).
+- **Operation events** — entities emit typed results through [`src/utils/OperationEventEmitter.ts`](src/utils/OperationEventEmitter.ts); entities do not own long-lived store coupling.
+- **Store synchronizers** — [`src/store/sync`](src/store/sync) applies **all** observable state updates and cross-store work after operations (user, group, node, scene, schedule, automation).
+- **MobX reactivity** — stores expose observable entities (`userStore`, `groupStore`, `nodeStore`, `sceneStore`, `scheduleStore`, `automationStore`, `subscriptionStore`).
+- **`_raw` and property-change sync** — adaptors keep the underlying source entity in sync with CDF property changes where needed.
+
+Together, this yields **one API to learn**, **predictable state transitions**, and **type-safe** TypeScript across implementations.
 
 ---
 
-## Key Features
+## How CDF is structured
 
-- [x] **Reactive State Management:** Provides prebuilt reactive stores (`GroupStore`, `NodeStore`, `UserStore`, and `SubscriptionStore`) using MobX, ensuring seamless state synchronization and updates.
-- [x] **Backend Integration with `@espressif/rainmaker-base-sdk`:** Automatically manages API calls through the `@espressif/rainmaker-base-sdk` package, reducing the need for repetitive backend setup.
-- [x] **Effortless Initialization:** Automatically initializes the `@espressif/rainmaker-base-sdk` package with minimal configuration, requiring only SDK and CDF setup.
-- [x] **Unified Data Flow:** Offers a centralized, reactive layer for managing data from Rainmaker backend services, streamlining app development.
-- [x] **Modular and Scalable:** Provides a flexible architecture to suit both simple and complex Rainmaker applications, supporting extensibility and maintainability.
+| Piece | Role |
+| -------- | ---- |
+| **Adaptors** | Implement `ESPSDKAdaptorCore` (and feature interfaces); transform source entities into CDF entities and supply `operations` delegates. |
+| **CDF entities** | Thin wrappers: call `operations`, emit success/failure on `OperationEventEmitter`; **synchronizers** apply property updates via stores — entities do not self-mutate app-visible state in the unified pattern. |
+| **Stores** | Hold observable maps/lists; expose `@action` update helpers for synchronizers; typically exclude `_raw` and `operations` from deep MobX tracking where appropriate. |
+| **Synchronizers** | Subscribe to entity events, map operation payloads to store updates, coordinate multi-store effects, manage attach/detach lifecycle. |
 
 ---
 
-## Requirements
+## Architecture at a glance
 
-Before installing the `@espressif/rainmaker-base-cdf` package, ensure you meet the following prerequisites:
+Typical operation path through CDF:
 
-- **Node.js**: Version 20.17.0 or higher is recommended.
-- **Package Manager**: Any one from npm, yarn, or pnpm installed.
+1. App calls a method on a **CDF entity** (e.g. `group.getNodes()`, `automation.update(...)`).
+2. Entity runs the **adaptor `operations`** (underlying implementation call).
+3. Entity **emits** an operation event (success or failure).
+4. The relevant **store synchronizer** handles the event and updates **stores** (`@action` / observable updates).
+5. **MobX** propagates changes to the UI.
 
 ---
 
 ## Installation
 
-To use the `@espressif/rainmaker-base-cdf` package in your project, follow the steps below:
-
-Install `@espressif/rainmaker-base-cdf` using the following command:
-
-### Using npm
+### npm
 
 ```bash
 npm install @espressif/rainmaker-base-cdf
 ```
 
-### Using Yarn
+### yarn
 
 ```bash
 yarn add @espressif/rainmaker-base-cdf
 ```
 
-### Using pnpm
+### pnpm
 
 ```bash
 pnpm add @espressif/rainmaker-base-cdf
 ```
 
-After installation, you can import and initialize the package in your project to start using the reactive stores.
-
 ---
 
-## Usage
+## Quick Start
 
-Below are examples to help you get started with the `@espressif/rainmaker-base-cdf` package in your application:
+### 1. Register adaptor(s) and initialize CDF
 
-### 1. **Initialization**
+```ts
+import { AdaptorRegistry, initCDF } from "@espressif/rainmaker-base-cdf";
+// import { ESPRMBaseSDKAdaptor } from "<your-adaptor-package>";
 
-Initialize the `@espressif/rainmaker-base-cdf` package by providing the required configuration. This automatically sets up the necessary reactive stores.
+const sdkAdaptorRegistry = AdaptorRegistry.getInstance();
+sdkAdaptorRegistry.clear();
 
-```javascript
-import { initCDF } from "@espressif/rainmaker-base-cdf";
+// Register one or more adaptors that implement ESPSDKAdaptor
+// const esprmAdaptor = new ESPRMBaseSDKAdaptor({ ...config });
+// sdkAdaptorRegistry.register(esprmAdaptor);
+// sdkAdaptorRegistry.setActiveAdaptor(esprmAdaptor._identifier);
 
-const initApp = async () => {
-  const sdkConfiguration = {
-    baseUrl: "https://api.rainmaker.espressif.com",
-    version: "v1",
-  };
-  try {
-    const espCDF = await initCDF(sdkConfiguration, { autoSync: true });
-    console.log("Rainmaker Base CDF initialized:", espCDF);
-  } catch (error) {
-    console.error("Initialization error:", error);
-  }
-};
-initApp();`
+const cdf = await initCDF({ sdkAdaptorRegistry });
 ```
 
----
+### 2. Authenticate through the active adaptor
 
-### 2. **User Authentication**
+```ts
+await cdf.userStore.auth.login({
+  username: "user@example.com",
+  password: "password",
+});
 
-Use the `UserStore` for logging in and managing user-related data.
-
-#### Example: Login
-
-```javascript
-const handleConnect = async () => {
-  try {
-    await espCDF.userStore.login(username, password);
-    console.log("User logged in successfully");
-  } catch (error) {
-    console.error("Login error:", error);
-  }
-};
+const user = cdf.userStore.user;
 ```
 
-#### Example: Accessing User Info
+### 3. Fetch groups and nodes using unified entities
 
-```javascript
-if (espCDF.userStore.userInfo) {
-  console.log("User Info:", espCDF.userStore.userInfo);
+For multi-adaptor flows, you can resolve the **authorization entity** per adaptor. After login, `userStore.user` is often the right handle:
+
+```ts
+if (!user) throw new Error("No active user");
+
+await user.getGroups();
+const groups = cdf.groupStore.groupsList;
+
+const group = groups[0];
+if (group) {
+  await group.getNodes();
 }
+
+const nodes = cdf.nodeStore.nodesList;
 ```
 
----
+### 4. Update entities with unified APIs
 
-### 3. **Working with Nodes**
-
-Use the `NodeStore` to interact with node data.
-
-#### Example: Fetching Nodes
-
-```javascript
-const nodes = espCDF.nodeStore.nodeList;
-console.log("Nodes:", nodes);
-```
-
-#### Example: Reactively Handling Node Updates
-
-```javascript
-useEffect(() => {
-  console.groupCollapsed("Node list updated");
-  console.log(espCDF.nodeStore.nodeList);
-  console.groupEnd();
-}, [espCDF.nodeStore.nodeList]);
-```
-
----
-
-### 4. **Working with Groups**
-
-Use the `GroupStore` to manage group data.
-
-#### Example: Fetching Groups
-
-```javascript
-const groups = espCDF.groupStore.groupList;
-console.log("Groups:", groups);
-```
-
-#### Example: Handling Group Updates
-
-```javascript
-useEffect(() => {
-  console.groupCollapsed("Group list updated");
-  console.log(espCDF.groupStore.groupList);
-  console.groupEnd();
-}, [espCDF.groupStore.groupList]);
-```
-
----
-
-### 5. **Working with Scenes**
-
-Use the `SceneStore` to manage scene data and operations.
-
-#### Example: Fetching Scenes
-
-```javascript
-// Sync scenes from specific nodes
-await espCDF.sceneStore.syncScenesFromNodes(['node1', 'node2']);
-const scenes = espCDF.sceneStore.sceneList;
-console.log("Scenes:", scenes);
-```
-
-#### Example: Creating and Managing Scenes
-
-```javascript
-// Create a new scene
-const newScene = await espCDF.sceneStore.createScene({
-  name: "Living Room Scene",
-  nodes: ["node1", "node2"],
-  actions: {
-    node1: { light: { power: true, brightness: 80 } },
-    node2: { fan: { power: false } },
-  },
-});
-
-// Activate a scene
-await espCDF.sceneStore.activateScene("scene123");
-
-// Remove a scene
-const scene = espCDF.sceneStore.getScene("scene123");
-if (scene) await scene.remove();
-```
-
-#### Example: Handling Scene Updates
-
-```javascript
-useEffect(() => {
-  console.groupCollapsed("Scene list updated");
-  console.log(espCDF.sceneStore.sceneList);
-  console.groupEnd();
-}, [espCDF.sceneStore.sceneList]);
-```
-
----
-
-### 6. **Working with Schedules**
-
-Use the `ScheduleStore` to manage time-based device operations.
-
-```javascript
-// Create a schedule
-const schedule = await espCDF.scheduleStore.createSchedule({
-  name: "Morning Routine",
-  nodes: ["bedroom_light"],
-  action: {
-    bedroom_light: { light: { power: true } }
-  },
-  triggers: [{ m: 420, d: 127 }] // 7:00 AM daily
-});
-
-// Manage schedules
-const schedules = espCDF.scheduleStore.scheduleList;
-await espCDF.scheduleStore.enableSchedule("schedule123");
-await espCDF.scheduleStore.disableSchedule("schedule123");
-
-// Handle updates
-useEffect(() => {
-  console.log("Schedules updated:", espCDF.scheduleStore.scheduleList);
-}, [espCDF.scheduleStore.scheduleList]);
-```
-
----
-
-### 7. **Working with Automations**
-
-Use the `AutomationStore` to manage context-aware automations.
-
-```javascript
-// Access automations by type
-const allAutomations = espCDF.automationStore.automationList;
-const weatherAutomations = espCDF.automationStore.weatherAutomationList;
-const daylightAutomations = espCDF.automationStore.daylightAutomationList;
-
-// Manage automations
-const nodeAutomations = espCDF.automationStore.getAutomationsByNodeId("node123");
-const locationAutomations = espCDF.automationStore.getWeatherAutomationsByLocation({
-  latitude: 37.7749,
-  longitude: -122.4194
-});
-
-// Update automation
-const automation = espCDF.automationStore.getAutomationById("automation123");
+```ts
+const automation = cdf.automationStore.getAutomationById("automation-id");
 if (automation) {
-  await automation.updateName("New Name");
-  await automation.enable(true);
+  await automation.update({ name: "New Automation Name", enabled: true });
 }
 ```
+
+---
+
+## Core responsibilities
+
+CDF separates concerns so app code stays **adaptor-agnostic**:
+
+- **Adaptors** translate between source types and CDF entities.
+- **Entities** delegate operations and emit typed events.
+- **Synchronizers** centralize entity/store updates and cross-store coordination.
+- **Stores** expose observable entities for reactive UIs.
+
+---
 
 ## Resources
 
 - [Changelog](CHANGELOG.md)
+- [API Documentation](https://espressif.github.io/esp-rainmaker-app-cdf-ts/)
 
 ## License
 

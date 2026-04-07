@@ -1,38 +1,23 @@
 /*
- * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { action } from "mobx";
-import { CDF } from "./index";
-import { ESPTransportConfig } from "../types/index";
-import { handleNodeUpdateEvent } from "../utils/common";
-import { ESPRMEventType } from "@espressif/rainmaker-base-sdk";
+import { ESPCDFTransportConfig } from "../types";
+import { ESPCDF } from "./index";
+import {
+  handleNodeUpdateEvent,
+  handleNodeTransportUpdate,
+} from "../services/nodeEventHandlers";
 
 class SubscriptionStore {
-  private readonly rootStore: CDF | null;
+  private readonly rootStore: ESPCDF | null;
 
-  constructor(rootStore?: CDF) {
+  constructor(rootStore?: ESPCDF) {
     this.rootStore = rootStore || null;
   }
-
-  /**
-   * Subscribes all listeners to the user store's user instance.
-   * @returns {void}
-   *
-   * GPT Context: This method subscribes all listeners to the user store's user instance for the specified event type. It ensures that the transport's listen method is called whenever the specified event type occurs.
-   */
-  subscribeAllListeners = async () => {
-    this.rootStore?.userStore.user?.subscribe(
-      ESPRMEventType.localDiscovery,
-      this.transport.listen
-    );
-    this.rootStore?.userStore.user?.subscribe(
-      ESPRMEventType.nodeUpdates,
-      this.nodeUpdates.listen
-    );
-  };
 
   /**
    * Transport module to handle transport-related operations.
@@ -42,8 +27,6 @@ class SubscriptionStore {
      * Listens for transport details and updates the device store.
      * @param {string} nodeId - The ID of the node to update.
      * @param {ESPTransportConfig} transportDetails - The transport details to process.
-     *
-     * GPT Context: This function listens for transport details and updates the corresponding device's transport order and available transports in the device store.
      */
     listen: action(
       ({
@@ -51,12 +34,14 @@ class SubscriptionStore {
         transportDetails,
       }: {
         nodeId: string;
-        transportDetails: ESPTransportConfig;
+        transportDetails: ESPCDFTransportConfig;
       }) => {
-        if (this.rootStore?.nodeStore?._nodesByID[nodeId]) {
-          this.rootStore.nodeStore.updateNodeTransport(
+        if (this.rootStore?.nodeStore?.getNodeById(nodeId)) {
+          handleNodeTransportUpdate(
+            this.rootStore,
             nodeId,
-            transportDetails
+            transportDetails,
+            "add"
           );
         }
       }
@@ -64,9 +49,13 @@ class SubscriptionStore {
   };
 
   nodeUpdates = {
-    listen: action((event: any) =>
-      handleNodeUpdateEvent(event, this.rootStore)
-    ),
+    /**
+     * Listens for node update events and routes them to appropriate handlers.
+     * @param {any} event - The node update event from the SDK.
+     */
+    listen: action((event: any) => {
+      handleNodeUpdateEvent(event, this.rootStore);
+    }),
   };
 }
 
