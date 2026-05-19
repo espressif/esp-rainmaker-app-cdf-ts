@@ -1,23 +1,18 @@
 /*
- * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import {
-  makeAutoObservable,
+  makeObservable,
   observable,
   isObservableArray,
   isObservableObject,
   isObservableMap,
-  extendObservable as mobxExtendObservable,
 } from "mobx";
-import { ESPRMNode } from "../types/index";
-import { ESPTransportMode } from "@espressif/rainmaker-base-sdk";
 
-import { Interceptor, InterceptorConfig } from "../types";
-import * as constants from "./constants";
-import { CDF } from "../index";
+import { ESPCDFBatchOperationResult } from "../types";
 
 /**
  * Recursively makes all properties of an object observable.
@@ -25,32 +20,37 @@ import { CDF } from "../index";
  * This function traverses an object and makes every property observable,
  * including nested objects and arrays of objects. If a property is already
  * observable, it will not be modified.
- *
- * @param {any} obj - The object to be made observable.
- * @returns {any} - The observable version of the input object.
- *
+ * @param obj - The object to be made observable.
+ * @param excludeKeys - Keys to exclude from being made observable (e.g., '_raw', 'operations')
+ * @param visited - Set of already visited objects to prevent circular references
+ * @returns - The observable version of the input object.
  * @example
- * const obj = { a: 1, b: { c: 2 } };
- * const observableObj = makeEverythingObservable(obj);
+ * const obj = { a: 1, b: { c: 2 }, _raw: sdkObject };
+ * const observableObj = makeEverythingObservable(obj, new Set(['_raw']));
  * console.log(isObservable(observableObj)); // true
  * console.log(isObservable(observableObj.b)); // true
+ * console.log(isObservable(observableObj._raw)); // false (excluded)
  *
- * @remarks
- * This function is useful in scenarios where you need to ensure that all parts
- * of an object, including deeply nested properties, are observable by Mobx.
- * This is particularly useful in state management for reactive programming.
+ * Useful when nested properties must be observable in MobX; exclude keys like '_raw' and
+ * 'operations' that are SDK-specific and don't need reactivity.
  */
 export const makeEverythingObservable = <T extends object>(
   obj: T,
+  excludeKeys: Set<string> = new Set(["_raw", "operations"]),
   visited: WeakSet<object> = new WeakSet()
 ): T => {
   try {
+    // Skip Error instances - they have non-serializable properties and circular references
+    if (obj instanceof Error) {
+      return obj;
+    }
+
     if (Array.isArray(obj)) {
       if (isObservableArray(obj)) {
         return obj;
       }
       return observable.array(
-        obj.map((item) => makeEverythingObservable(item, visited))
+        obj.map((item) => makeEverythingObservable(item, excludeKeys, visited))
       ) as unknown as T;
     } else if (obj !== null && typeof obj === "object") {
       if (visited.has(obj)) {
@@ -62,16 +62,37 @@ export const makeEverythingObservable = <T extends object>(
         return obj;
       }
 
+      // First, recursively make nested properties observable (excluding specified keys)
+      const annotations: Record<string, any> = {};
+
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          if (excludeKeys.has(key)) {
+            // Skip excluded keys - don't add them to annotations
+            // They will remain non-observable
+            continue;
+          }
+
+          // Recursively make nested values observable
           const value: any = (obj as Record<string, unknown>)[key];
           (obj as Record<string, unknown>)[key] = makeEverythingObservable(
             value,
+            excludeKeys,
             visited
           );
+
+          // Add to annotations - only properties in annotations will be made observable
+          annotations[key] = observable;
         }
       }
-      return makeAutoObservable(obj);
+
+      // Use makeObservable with explicit annotations
+      // Properties not in annotations (like _raw, operations) won't be made observable
+      if (Object.keys(annotations).length > 0) {
+        makeObservable(obj, annotations);
+      }
+
+      return obj;
     }
     return obj;
   } catch (error) {
@@ -80,206 +101,11 @@ export const makeEverythingObservable = <T extends object>(
 };
 
 /**
- * Intercepts and wraps nested functions within an object with custom logic.
- * @param {object} target - The object containing the nested functions to be intercepted.
- * @param {string} path - The path to the nested function to be intercepted.
- * @param {Interceptor} interceptor - The interceptor function to wrap the original function.
- * @returns {void}
- * @example
- * const target = {
- *  a: {
- *   b: {
- *   c: async function() {
- *    console.log("Original function");
- *  }
- * }
- * }
- * };
- * const interceptor = async (originalFunction, context, args) => {
- * console.log("Interceptor function");
- * return await originalFunction.call(context, ...args);
- * };
- * proxyActionHandler(target, "a.b.c", interceptor);
- * target.a.b.c(); // Output: "Interceptor function" followed by "Original function"
- * @remarks
- * This function is useful for intercepting and wrapping nested functions within an object
- * with custom logic. It allows you to modify the behavior of the original function without
- * changing its implementation. The interceptor function receives the original function, context,
- * and arguments as parameters, and can perform custom actions before and after calling the original function.
- * The original function is called using the `call` method to ensure that the context is preserved.
- * The `path` parameter specifies the nested function to be intercepted, using dot notation to traverse
- * nested objects. If the path is invalid or the property is not a function, an error will be thrown.
- * The `interceptor` function should return the result of the original function call, allowing you to
- * modify the return value if needed.
- * @see createInterceptor
- * @see Interceptor
- * @see Action
- * @see Rollback
+ * Deeply merges two objects, recursively merging nested objects.
+ * @param target - The target object to merge into
+ * @param source - The source object to merge from
+ * @returns A new object with merged properties
  */
-
-export function proxyActionHandler(
-  target: object,
-  path: string,
-  interceptor: Interceptor
-): void {
-  // Convert the string path into an array of keys
-  const keyPath = path.split(".");
-
-  const traverseAndIntercept = (current: any, path: string[]): void => {
-    if (!current || path.length === 0) return;
-    const key = path[0];
-    if (Array.isArray(current)) {
-      // If current is an array, apply to each element
-      current.forEach((item) => traverseAndIntercept(item, path));
-    } else if (path.length === 1) {
-      // Final key in the path; intercept the function
-      const originalFunction = current[key];
-      if (typeof originalFunction !== "function") {
-        throw new Error(constants.PROPERTY_NOT_A_FUNCTION_ERR(key, keyPath));
-      }
-      current[key] = async function (...args: any[]) {
-        return await interceptor.call(
-          this,
-          originalFunction.bind(this),
-          this,
-          args
-        );
-      };
-    } else {
-      // Continue traversing the object
-      traverseAndIntercept(current[key], path.slice(1));
-    }
-  };
-
-  traverseAndIntercept(target, keyPath);
-}
-
-/**
- * Performs a shallow clone of a given object or array.
- * @param obj The object or array to be shallowly cloned.
- * @returns A new shallow-cloned object or array.
- * @example
- * const obj = { a: 1, b: { c: 2 } };
- * const clonedObj = shallowClone(obj);
- * console.log(clonedObj); // { a: 1, b: { c: 2 } }
- * console.log(obj === clonedObj); // false
- * console.log(obj.b === clonedObj.b); // true
- * @remarks
- * This function performs a shallow clone of an object or array, creating a new object with the same properties
- * and values as the original. Nested objects and arrays are not deeply cloned, meaning that the new object will
- * share references to the nested objects and arrays with the original. This is useful when you need to create a
- * copy of an object without modifying the original, but do not need to deeply clone nested objects or arrays.
- */
-export function shallowClone<T>(obj: T): T {
-  if (obj === null || typeof obj !== "object") {
-    return obj; // Return if obj is not an object or array
-  }
-
-  if (obj instanceof Array) {
-    return obj.slice() as unknown as T; // Handle Array
-  }
-
-  if (obj instanceof Set) {
-    return new Set(obj) as unknown as T; // Handle Set
-  }
-
-  if (obj instanceof Map) {
-    return new Map(obj) as unknown as T; // Handle Map
-  }
-
-  // Handle objects
-  return { ...obj };
-}
-
-/**
- * Creates an interceptor function that wraps an original function with custom actions and rollback logic.
- * @param action The custom action to be performed before calling the original function.
- * @param rollback The rollback function to be executed in case of an error.
- * @returns An interceptor function that wraps the original function.
- * @example
- * const action = (context, args) => {
- * context.nodeIds = [...context.nodeIds, ...args[0]];
- * };
- * const rollback = (context, prevContext) => {
- * context.nodeIds = prevContext.nodeIds;
- * };
- * const interceptor = createInterceptor(action, rollback);
- * const originalFunction = async function() {
- * console.log("Original function");
- * };
- * const context = { nodeIds: [] };
- * const args = [["node1", "node2"]];
- * interceptor(originalFunction, context, args);
- * @remarks
- * This function creates an interceptor function that wraps an original function with custom actions
- * and rollback logic. The `action` parameter specifies the custom action to be performed before calling
- * the original function, allowing you to modify the context or arguments as needed. The `rollback` parameter
- * specifies the rollback function to be executed in case of an error, allowing you to revert the context to
- * its previous state. The interceptor function receives the original function, context, and arguments as parameters,
- * and can perform custom actions before and after calling the original function. The original function is called using
- * the `call` method to ensure that the context is preserved. If an error occurs during the execution of the original
- * function, the interceptor will call the rollback function to revert the context to its previous state. This is useful
- * for implementing error handling, logging, or other custom logic around function calls.
- * @see Interceptor
- * @see Action
- * @see Rollback
- */
-export function createInterceptor(config: InterceptorConfig): Interceptor {
-  const { action, rollback, onSuccess, onError } = config;
-  return async (originalFunction, context, args) => {
-    const prevContext = shallowClone(context); // Clone the context for rollback
-    try {
-      // Perform the custom action before calling the original function
-      if (action) action(context, args);
-      const result = await originalFunction.call(context, ...args);
-      if (onSuccess) return await onSuccess(result, args, context);
-      return result;
-    } catch (err) {
-      // Rollback the context changes in case of an error
-      if (rollback) rollback(context, prevContext);
-      if (onError) return await onError(err);
-      console.error("Interceptor error:", err);
-      throw err;
-    }
-  };
-}
-
-/**
- * Extends an object with additional observable properties.
- * @param target The object to be extended with observable properties.
- * @param properties The properties to be added to the object.
- * @returns The extended object with observable properties.
- * @example
- * class UserStore {
- * @observable user = { name: "John", age: 30 };
- * }
- * const userStore = new UserStore();
- * extendObservable(userStore, { isAdmin: false });
- * console.log(userStore.isAdmin); // false
- * @remarks
- * This function extends an object with additional observable properties, allowing you to add reactive
- * properties to an existing object. The `target` parameter specifies the object to be extended, while the
- * `properties` parameter specifies the properties to be added. The properties will be made observable using
- * Mobx, allowing you to reactively track changes to the object. This is useful for adding new properties to
- * an existing object, or for converting a plain object into a reactive object. The function uses Mobx's
- * `extendObservable` method internally to make the properties observable.
- */
-export function extendObservable(
-  target: any,
-  properties: { [key: string]: any }
-) {
-  mobxExtendObservable(target, properties);
-}
-
-/**
- * Capitalizes the first letter of a string.
- * @param {string} str - The string to capitalize.
- * @returns {string} The capitalized string.
- */
-export function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 export function deepMerge(target: any, source: any) {
   for (const key in source) {
     if (source[key] instanceof Object && target[key]) {
@@ -289,143 +115,75 @@ export function deepMerge(target: any, source: any) {
   return { ...target, ...source };
 }
 
-export function handleNodeUpdateEvent(event: any, rootStore: CDF | null) {
-  const { event_type, timestamp, node_id = null, payload = null } = event;
+/**
+ * Error message map for common CDF errors.
+ * Provides consistent error messages across the CDF package.
+ */
+export const ERROR_MESSAGE_MAP = {
+  NO_SDK_WITH_CAPABILITY: (capability: string) =>
+    `No SDKs found with ${capability} capability`,
+  NO_MORE_NODES_TO_FETCH: (sdkSource: string) =>
+    `No more nodes to fetch from SDK ${sdkSource}`,
+  NO_MORE_GROUPS_TO_FETCH: (sdkSource: string) =>
+    `No more groups to fetch from SDK ${sdkSource}`,
+  NODE_NOT_FOUND: (nodeId: string) => `Node with id ${nodeId} not found`,
+  GROUP_NOT_FOUND: (groupId: string) => `Group with id ${groupId} not found`,
+  SDK_ADAPTOR_ALREADY_EXISTS: (sdkIdentifier: string) =>
+    `SDK Adaptor with identifier ${sdkIdentifier} already exists in registry`,
+  SDK_ADAPTOR_NOT_FOUND: (sdkIdentifier: string) =>
+    `SDK Adaptor with identifier ${sdkIdentifier} not found in registry`,
+  SDK_ADAPTOR_METHOD_PROPERTY_NOT_IMPLEMENTED: (
+    sdkIdentifier: string,
+    propertyOrMethodName: string
+  ) =>
+    `SDK Adaptor with identifier ${sdkIdentifier} does not implement method or property ${propertyOrMethodName}`,
+  CDF_CONFIG_MISSING: `CDF config is missing`,
+  SDK_REGISTRY_MISSING: `SDK registry is missing`,
+  NO_ACTIVE_ADAPTOR_SET: `No active SDK adaptor is set. Call registry.setActiveAdaptor(identifier) first or provide adaptorIdentifier in the request`,
+};
 
-  // Parse payload safely
-  const parsedPayload = safelyParsePayload(payload);
-
-  // Handle events based on their type
-  switch (event_type) {
-    case constants.EVENT_NODE_PARAMS_CHANGED:
-      handleNodeParamsChanged(rootStore, node_id, parsedPayload);
-      break;
-
-    case constants.EVENT_USER_NODE_ADDED:
-      handleUserNodeAdded(rootStore, parsedPayload);
-      break;
-
-    case constants.EVENT_USER_NODE_REMOVED:
-      handleUserNodeRemoved(rootStore, parsedPayload);
-      break;
-
-    case constants.EVENT_NODE_CONNECTED:
-      handleNodeConnected(rootStore, node_id, timestamp);
-      break;
-
-    case constants.EVENT_NODE_DISCONNECTED:
-      handleNodeDisconnected(rootStore, node_id, timestamp);
-      break;
-
-    default:
-      throw new Error(`Unhandled event type: ${event_type}`);
-  }
+/**
+ * Checks if an object is empty (null, undefined, or has no keys).
+ * @param obj - The object to check
+ * @returns True if the object is null, undefined, or has no enumerable keys
+ */
+export function isEmptyObject(obj: any): boolean {
+  return obj === null || obj === undefined || Object.keys(obj).length === 0;
 }
 
 /**
- * Safely parses the payload and throws an error if parsing fails.
+ * Partitions PromiseSettledResult array into successful and failed results.
+ *
+ * Used for batch operations where multiple promises are settled and need to be
+ * categorized into successful and failed results.
+ * @param results - Array of PromiseSettledResult containing arrays of results
+ * @returns Object with successfulResults and failedResults arrays
  */
-function safelyParsePayload(payload: any): any {
-  if (!payload) return null;
-
-  try {
-    return JSON.parse(payload);
-  } catch (error) {
-    throw new Error("Failed to parse payload: " + error);
-  }
-}
-
-/**
- * Handles the `EVENT_NODE_PARAMS_CHANGED` event.
- */
-function handleNodeParamsChanged(
-  rootStore: CDF | null,
-  node_id: string,
-  payload: any
-) {
-  rootStore?.nodeStore?.updateNode(
-    node_id,
-    payload,
-    constants.NodeUpdateType.DEVICE_PARAMS
-  );
-}
-
-/**
- * Handles the `EVENT_USER_NODE_ADDED` event.
- */
-async function handleUserNodeAdded(rootStore: CDF | null, payload: any) {
-  if (!rootStore) return;
-
-  const nodeIds = payload.nodeIds;
-  const nodes: ESPRMNode[] = await Promise.all(
-    nodeIds.map((nodeId: string) =>
-      rootStore.userStore.user?.getNodeDetails(nodeId)
+export function partitionBatchArrayResults<TSuccess, TError = unknown>(
+  results: PromiseSettledResult<TSuccess[]>[]
+): ESPCDFBatchOperationResult<TSuccess, TError> {
+  const successfulResults = results
+    .filter(
+      (result): result is PromiseFulfilledResult<TSuccess[]> =>
+        result.status === "fulfilled"
     )
-  );
+    .flatMap((result) => result.value);
 
-  nodes.forEach((node) => {
-    if (node) rootStore.nodeStore.addNode(node);
-  });
-}
+  const failedResults = results
+    .filter(
+      (result): result is PromiseRejectedResult => result.status === "rejected"
+    )
+    .map((result) => result.reason);
 
-/**
- * Handles the `EVENT_USER_NODE_REMOVED` event.
- */
-function handleUserNodeRemoved(rootStore: CDF | null, payload: any) {
-  rootStore?.nodeStore?.deleteNodes(payload.nodeIds);
-}
-
-/**
- * Handles the `EVENT_NODE_CONNECTED` event.
- */
-function handleNodeConnected(
-  rootStore: CDF | null,
-  node_id: string,
-  timestamp: number
-) {
-  rootStore?.nodeStore?.updateNode(
-    node_id,
-    {
-      isConnected: true,
-    },
-    constants.NodeUpdateType.CONNECTIVITY_STATUS
-  );
-  rootStore?.nodeStore?.updateNodeTransport(node_id, {
-    type: ESPTransportMode.cloud,
-    metadata: {},
-  });
-}
-
-/**
- * Handles the `EVENT_NODE_DISCONNECTED` event.
- */
-function handleNodeDisconnected(
-  rootStore: CDF | null,
-  node_id: string,
-  timestamp: number
-) {
-  rootStore?.nodeStore?.updateNode(
-    node_id,
-    {
-      isConnected: false,
-    },
-    constants.NodeUpdateType.CONNECTIVITY_STATUS
-  );
-  rootStore?.nodeStore?.updateNodeTransport(
-    node_id,
-    { type: ESPTransportMode.cloud, metadata: {} },
-    "remove"
-  );
+  return { successfulResults, failedResults };
 }
 
 /**
  * Compares two arrays of objects and checks if all objects in array1 exist in array2
- *
  * @param array1 First array to compare
  * @param array2 Second array to compare against
  * @param key Optional key to use for faster comparison instead of full object comparison
  * @returns True if all objects in array1 exist in array2, false otherwise
- *
  * @example
  * // With key comparison
  * compareArrays([{id: 1}, {id: 2}], [{id: 1}, {id: 2}, {id: 3}], 'id') // true
