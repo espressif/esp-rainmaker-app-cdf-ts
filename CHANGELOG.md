@@ -3,15 +3,35 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
-## [v1.2.1]
+## [v2.0.0]
 
-> Supports SDK [`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)
+> Major CDF revamp with a unified, SDK-agnostic architecture. No longer pinned to a specific SDK — bring your own adapter via the registry.
+
+### Breaking Changes
+
+- CDF must be initialized by registering an SDK adapter through `src/registry.ts`; direct coupling to `@espressif/rainmaker-base-sdk` is removed.
+- Store sync methods have moved off `nodeStore`, `groupStore`, `userStore`, `sceneStore`, `scheduleStore`, and `automationStore` onto their `*Synchronizer` counterparts under `src/store/sync/`.
+- Entity and store type imports have moved to `src/types/entities/*` and `src/types/store/*`.
+- Errors are now thrown as typed classes from `src/errors` (`base`, `config`, `registry`).
+
+### Added
+
+- **Entities** (`src/entities`): classes for `Node`, `Group`, `User`, `Device`, `Scene`, `Schedule`, `Automation`, `Service`, and params — the app-facing contract across adapters.
+- **SDK Registry** (`src/registry.ts`): register, resolve, and switch SDK adapters at runtime.
+- **Service Event Handling** (`src/services`): centralizes how external node events translate into entity/store mutations.
+- **Centralized Errors** (`src/errors`): base, config, and registry error classes with consistent construction.
+
+### Changed
+
+- **Stores**: split into store + synchronizer pairs under `src/store/sync/`. Stores own state; synchronizers own data sync.
+- **Types**: reorganized into `src/types/entities/*` and `src/types/store/*`.
+
+## [v1.2.1]
 
 ### Fixed
 
-- **Scene Synchronization**: `syncScenesFromNodes` now requires `nodeIds` and transforms scenes only for specified nodes. Updated README with async usage example.  
-- **Pagination**: Fixed `fetchNext` handling in `NodeStore`, `GroupStore`, and `AutomationStore` to ensure consistent pagination.
-
+- `syncScenes` now syncs the scenes store only for the given nodes.
+- Corrected pagination reference across stores.
 
 ## [v1.2.0]
 

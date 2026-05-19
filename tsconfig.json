@@ -9,11 +9,11 @@
     "lib": ["es2021", "dom"],
     "forceConsistentCasingInFileNames": true,
     "removeComments": false,
-    "moduleResolution": "node",
+    "module": "node16",
+    "moduleResolution": "node16",
     "declaration": true,
     "declarationDir": "./dist",
-    "allowJs": true,
-    "baseUrl": "."
+    "allowJs": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
