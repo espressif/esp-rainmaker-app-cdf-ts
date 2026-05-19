@@ -5,34 +5,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [v2.0.0]
 
-> Major CDF revamp with a unified, SDK-agnostic architecture.
-> Includes support for RainMaker base SDK adapter ([`v2.0.4`](https://www.npmjs.com/package/@espressif/rainmaker-base-sdk/v/2.0.4)).
+> Major CDF revamp with a unified, SDK-agnostic architecture. No longer pinned to a specific SDK — bring your own adapter via the registry.
+
+### Breaking Changes
+
+- CDF must be initialized by registering an SDK adapter through `src/registry.ts`; direct coupling to `@espressif/rainmaker-base-sdk` is removed.
+- Store sync methods have moved off `nodeStore`, `groupStore`, `userStore`, `sceneStore`, `scheduleStore`, and `automationStore` onto their `*Synchronizer` counterparts under `src/store/sync/`.
+- Entity and store type imports have moved to `src/types/entities/*` and `src/types/store/*`.
+- Errors are now thrown as typed classes from `src/errors` (`base`, `config`, `registry`).
 
 ### Added
 
-- **Unified CDF Layer**:
-  - Re-architected CDF as a unified abstraction layer that can adapt to multiple SDK implementations.
-  - Standardized integration points to support pluggable SDK adapters.
-
-- **Entities Layer**:
-  - Added the `entities`-driven engine layer (`src/entities`) as the app-facing abstraction.
-  - Provides a unified contract for applications to consume CDF capabilities consistently across SDK adapters.
-
-- **SDK Registry Layer**:
-  - Added an SDK registry mechanism to register, resolve, and switch SDK adapters consistently.
-  - Enabled clearer separation between CDF domain logic and SDK-specific transport/runtime behavior.
+- **Entities** (`src/entities`): classes for `Node`, `Group`, `User`, `Device`, `Scene`, `Schedule`, `Automation`, `Service`, and params — the app-facing contract across adapters.
+- **SDK Registry** (`src/registry.ts`): register, resolve, and switch SDK adapters at runtime.
+- **Service Event Handling** (`src/services`): centralizes how external node events translate into entity/store mutations.
+- **Centralized Errors** (`src/errors`): base, config, and registry error classes with consistent construction.
 
 ### Changed
 
-- **Architecture**:
-  - This release is a complete architectural overhaul of CDF and is published as a major version (`v2.0.0`).
-  - Existing integrations may require migration to the new unified layer and registry-driven SDK setup.
+- **Stores**: split into store + synchronizer pairs under `src/store/sync/`. Stores own state; synchronizers own data sync.
+- **Types**: reorganized into `src/types/entities/*` and `src/types/store/*`.
+
+## [v1.2.1]
 
 ### Fixed
 
-- **Scene Synchronization**: `syncScenesFromNodes` requires `nodeIds` and transforms scenes only for specified nodes.
-- **Pagination**: `fetchNext` handling in `NodeStore`, `GroupStore`, and `AutomationStore` is now consistent.
-
+- `syncScenes` now syncs the scenes store only for the given nodes.
+- Corrected pagination reference across stores.
 
 ## [v1.2.0]
 
