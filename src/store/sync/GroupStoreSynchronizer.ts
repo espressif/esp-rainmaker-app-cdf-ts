@@ -16,6 +16,7 @@ import { ESPCDFScene } from "../../entities/ESPCDFScene";
 import { ESPCDFSchedule } from "../../entities/ESPCDFSchedule";
 import { ESPCDFAutomation } from "../../entities/ESPCDFAutomation";
 import { ESPCDFGroupSharingRequest } from "../../entities/ESPCDFGroupSharingRequest";
+import { mergeLocalTransportFromNodeMap } from "../../utils/mergeNodeListLocalTransport";
 
 /**
  * Synchronizer for GroupStore reactive operations
@@ -260,7 +261,12 @@ export class GroupStoreSynchronizer {
         // First update nodeStore with the returned nodes
         if (data && Array.isArray(data)) {
           const nodes = data as ESPCDFNode[];
-          const merged = this.groupStore.mergeAndSetNodesList(nodes);
+          const nodeStore = this.rootStore?.nodeStore;
+          const merged =
+            nodeStore?.nodesByIDMap != null
+              ? mergeLocalTransportFromNodeMap(nodes, nodeStore.nodesByIDMap)
+              : nodes;
+          nodeStore?.setNodesList?.(merged);
           // Then update the group's nodes property directly to ensure MobX reactivity
           if (this.groupStore.groupsByIDMap[group.id]) {
             this.groupStore.groupsByIDMap[group.id].nodeDetails = merged;
@@ -331,6 +337,7 @@ export class GroupStoreSynchronizer {
       case "transfer":
       case "getSharingInfo":
       case "getSubGroups":
+      case "setParams":
         // These operations don't affect store state
         break;
 
