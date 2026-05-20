@@ -38,6 +38,7 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
   nodeDetails?: ESPCDFNode[];
   subGroups?: ESPCDFGroup[];
   isPrimaryUser?: boolean;
+  accessType?: string;
   totalNodes?: number;
   parentId?: string;
   type?: string;
@@ -66,6 +67,7 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
     this.subGroups =
       groupData.subGroups?.map((subGroup) => new ESPCDFGroup(subGroup)) || [];
     this.isPrimaryUser = groupData.isPrimaryUser;
+    this.accessType = groupData.accessType;
     this.totalNodes = groupData.totalNodes;
     this.parentId = groupData.parentId;
     this.type = groupData.type;
@@ -441,7 +443,7 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
 
   /**
    * Publishes param values through the adaptor group-level `setParams` path when supported.
-   * @param payload Device logical name → param name → value (shape defined by the active adaptor).
+   * @param payload The payload contains the value to publish and the target objects which represent the row of device and param that should receive the broadcast value for the given param.
    * @returns Adaptor-specific result.
    * @throws Error when the adaptor does not implement {@link ESPCDFGroupOperation.setParams}.
    */
