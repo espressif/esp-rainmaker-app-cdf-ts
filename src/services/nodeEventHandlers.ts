@@ -264,7 +264,9 @@ export function handleNodeUpdateEvent(event: any, rootStore: ESPCDF | null) {
  */
 export const handleAddNodeTransport = action(
   (rootStore: ESPCDF | null, nodeId: string, transport: ESPCDFTransportConfig) => {
-    if (!rootStore || !nodeId || !transport) return;
+    if (!rootStore || !nodeId || !transport?.type) return;
+
+    rootStore.subscriptionStore.registerTransport(nodeId, transport);
 
     const node = rootStore.nodeStore.getNodeById(nodeId);
     if (!node) return;
@@ -295,7 +297,9 @@ export const handleAddNodeTransport = action(
  */
 export const handleRemoveNodeTransport = action(
   (rootStore: ESPCDF | null, nodeId: string, transport: ESPCDFTransportConfig) => {
-    if (!rootStore || !nodeId || !transport) return;
+    if (!rootStore || !nodeId || !transport?.type) return;
+
+    rootStore.subscriptionStore.unregisterTransport(nodeId, transport.type);
 
     const node = rootStore.nodeStore.getNodeById(nodeId);
     if (!node) return;

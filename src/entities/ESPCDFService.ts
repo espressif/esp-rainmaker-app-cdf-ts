@@ -30,6 +30,7 @@ export class ESPCDFService implements ESPCDFServiceInterface {
   >;
 
   constructor(serviceData: ESPCDFServiceInterface) {
+    Object.assign(this, serviceData);
     this.name = serviceData.name;
     this.params = serviceData.params.map(
       (param) => new ESPCDFServiceParam(param)

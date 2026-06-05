@@ -9,6 +9,7 @@ import {
   ESPCDFGroupOperationType,
   ESPCDFGroupSharingRequestOperationType,
   ESPCDFGroupSharingStatus,
+  ESPCDFMatterFabricDetails,
 } from "../../types";
 import GroupStore from "../groupStore";
 import { ESPCDFNode } from "../../entities/ESPCDFNode";
@@ -16,7 +17,7 @@ import { ESPCDFScene } from "../../entities/ESPCDFScene";
 import { ESPCDFSchedule } from "../../entities/ESPCDFSchedule";
 import { ESPCDFAutomation } from "../../entities/ESPCDFAutomation";
 import { ESPCDFGroupSharingRequest } from "../../entities/ESPCDFGroupSharingRequest";
-import { mergeLocalTransportFromNodeMap } from "../../utils/mergeNodeListLocalTransport";
+import { applyRegisteredTransports } from "../../utils/registeredTransports";
 
 /**
  * Synchronizer for GroupStore reactive operations
@@ -258,20 +259,33 @@ export class GroupStoreSynchronizer {
         break;
 
       case "getNodes":
-        // First update nodeStore with the returned nodes
         if (data && Array.isArray(data)) {
-          const nodes = data as ESPCDFNode[];
-          const nodeStore = this.rootStore?.nodeStore;
-          const merged =
-            nodeStore?.nodesByIDMap != null
-              ? mergeLocalTransportFromNodeMap(nodes, nodeStore.nodesByIDMap)
-              : nodes;
-          nodeStore?.setNodesList?.(merged);
-          // Then update the group's nodes property directly to ensure MobX reactivity
-          if (this.groupStore.groupsByIDMap[group.id]) {
-            this.groupStore.groupsByIDMap[group.id].nodeDetails = merged;
-          }
+          this.syncGroupNodes(group, data as ESPCDFNode[]);
         }
+        break;
+
+      case "convertToMatterFabric":
+        this.applyFabricGroupUpdate(group, data);
+        break;
+
+      case "getFabricDetails":
+        if (data) {
+          this.groupStore.updateGroup(group.id, {
+            fabricDetails: data as ESPCDFMatterFabricDetails,
+          });
+        }
+        break;
+
+      case "getNodesWithDetails":
+        if (data && Array.isArray(data)) {
+          this.syncGroupNodes(group, data as ESPCDFNode[]);
+        }
+        break;
+
+      case "issueUserNoC":
+      case "issueNodeNoC":
+      case "startCommissioning":
+        // No group map mutation; commissioning handles / certs are consumed by the app layer
         break;
 
       case "addNodes":
@@ -345,6 +359,66 @@ export class GroupStoreSynchronizer {
         break;
     }
 
+  }
+
+  /**
+   * Merges node list into nodeStore and the group's {@link ESPCDFGroup.nodeDetails}.
+   */
+  private syncGroupNodes(group: ESPCDFGroup, nodes: ESPCDFNode[]): void {
+    const nodeStore = this.rootStore?.nodeStore;
+    const registered =
+      this.rootStore?.subscriptionStore.getRegisteredTransportsSnapshot() ??
+      {};
+    const merged =
+      nodeStore?.nodesByIDMap != null
+        ? nodes.map((node) => applyRegisteredTransports(node, registered))
+        : nodes;
+    nodeStore?.setNodesList?.(merged);
+    const stored = this.groupStore.groupsByIDMap[group.id];
+    if (stored) {
+      stored.nodeDetails = merged.map(
+        (node) => nodeStore?.getNodeById(node.id) ?? node,
+      );
+    }
+  }
+
+  /**
+   * After {@link ESPCDFGroup.convertToMatterFabric}, replace or patch the store entry
+   * with the SDK fabric group (same id, updated {@link isMatter}, {@link fabricId}, operations).
+   */
+  private applyFabricGroupUpdate(group: ESPCDFGroup, data?: unknown): void {
+    if (!data) {
+      return;
+    }
+
+    if (data instanceof ESPCDFGroup) {
+      const converted = data;
+      if (converted.id !== group.id) {
+        this.groupStore.addGroup(converted);
+        return;
+      }
+      if (this.groupStore.getGroupById(group.id)) {
+        this.groupStore.replaceGroup(group.id, converted);
+      } else {
+        this.groupStore.addGroup(converted);
+      }
+      return;
+    }
+
+    if (typeof data === "object") {
+      const patch = data as Record<string, unknown>;
+      this.groupStore.updateGroup(group.id, {
+        ...(patch.isMatter !== undefined && {
+          isMatter: Boolean(patch.isMatter),
+        }),
+        ...(patch.fabricId !== undefined && {
+          fabricId: String(patch.fabricId),
+        }),
+        ...(patch.fabricDetails !== undefined && {
+          fabricDetails: patch.fabricDetails as ESPCDFMatterFabricDetails,
+        }),
+      });
+    }
   }
 
   /**
