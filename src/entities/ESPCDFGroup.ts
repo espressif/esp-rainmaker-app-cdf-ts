@@ -18,7 +18,10 @@ import {
   ESPCDFScheduleCreateInput,
   ESPCDFAutomationCreateInput,
   ESPCDFIssueUserNoCResponse,
+  ESPCDFIssueNodeNoCRequest,
+  ESPCDFMatterCommissioningRequest,
   ESPCDFCommissioningProgress,
+  ESPCDFMatterFabricDetails,
 } from "../types";
 import { ESPCDFNode } from "./ESPCDFNode";
 import { ESPCDFScene } from "./ESPCDFScene";
@@ -48,7 +51,7 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
   customData?: Record<string, any>;
   isMatter?: boolean;
   fabricId?: string;
-  fabricDetails?: Record<string, any>;
+  fabricDetails?: ESPCDFMatterFabricDetails;
   _raw: any;
   operations: ESPCDFGroupOperation;
   readonly events: ESPCDFOperationEventEmitter<
@@ -57,6 +60,7 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
   >;
 
   constructor(groupData: ESPCDFGroupInterface) {
+    Object.assign(this, groupData);
     this.identifier = groupData.identifier;
     this.operations = groupData.operations;
     this.name = groupData.name;
@@ -410,12 +414,51 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
     return this.runAndEmit("leave", () => this.operations.leave(), () => this);
   }
 
-  // Matter fabric commissioning operations (only when isMatter === true)
+  // Matter fabric operations (Matter SDK adaptor)
+
+  /**
+   * Loads Matter fabric credentials from the cloud and updates {@link fabricDetails}.
+   * Call only when {@link isMatter} is true (after {@link convertToMatterFabric} if needed).
+   * @returns Fabric credentials for commissioning
+   */
+  async getFabricDetails(): Promise<ESPCDFMatterFabricDetails> {
+    if (!this.operations.getFabricDetails) {
+      throw new Error(
+        "getFabricDetails not available on current adaptor or group"
+      );
+    }
+    return this.runAndEmit(
+      "getFabricDetails",
+      async () => {
+        const details = await this.operations.getFabricDetails!();
+        this.fabricDetails = details;
+        return details;
+      },
+      (result) => result
+    );
+  }
+
+  /**
+   * Converts this home to a Matter fabric when it is not Matter-enabled yet.
+   * @returns Updated Matter fabric group (new instance when conversion occurred)
+   */
+  async convertToMatterFabric(): Promise<ESPCDFGroup> {
+    if (!this.operations.convertToMatterFabric) {
+      throw new Error(
+        "convertToMatterFabric not available on current adaptor or group"
+      );
+    }
+    return this.runAndEmit(
+      "convertToMatterFabric",
+      () => this.operations.convertToMatterFabric!(),
+      (result) => result
+    );
+  }
 
   async issueUserNoC(): Promise<ESPCDFIssueUserNoCResponse> {
     if (!this.operations.issueUserNoC) {
       throw new Error(
-        "issueUserNoC not available - group is not a Matter fabric"
+        "issueUserNoC not available on current adaptor or group"
       );
     }
     return this.runAndEmit(
@@ -425,13 +468,49 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
     );
   }
 
+  /**
+   * Issues a Matter node NoC for this fabric (`ESPRMFabric.issueNodeNoC`).
+   * Call when {@link isMatter} is true.
+   */
+  async issueNodeNoC(
+    request: ESPCDFIssueNodeNoCRequest
+  ): Promise<ESPCDFMatterCommissioningRequest> {
+    if (!this.operations.issueNodeNoC) {
+      throw new Error(
+        "issueNodeNoC not available on current adaptor or group"
+      );
+    }
+    return this.runAndEmit(
+      "issueNodeNoC",
+      () => this.operations.issueNodeNoC!(request),
+      (result) => result
+    );
+  }
+
+  /**
+   * Loads fabric nodes with full details (`ESPRMFabric.getNodesWithDetails`).
+   * Call when {@link isMatter} is true.
+   */
+  async getNodesWithDetails(): Promise<ESPCDFNode[]> {
+    if (!this.operations.getNodesWithDetails) {
+      throw new Error(
+        "getNodesWithDetails not available on current adaptor or group"
+      );
+    }
+    return this.runAndEmit(
+      "getNodesWithDetails",
+      () => this.operations.getNodesWithDetails!(),
+      (nodes) => nodes
+    );
+  }
+
   async startCommissioning(
     qrData: string,
     onProgress?: (message: ESPCDFCommissioningProgress) => void
   ): Promise<() => void> {
     if (!this.operations.startCommissioning) {
       throw new Error(
-        "startCommissioning not available - group is not a Matter fabric"
+        "startCommissioning not available on current adaptor or group"
       );
     }
     return this.runAndEmit(

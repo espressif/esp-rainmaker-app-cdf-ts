@@ -33,6 +33,7 @@ export class ESPCDFServiceParam implements ESPCDFServiceParamInterface {
   >;
 
   constructor(paramData: ESPCDFServiceParamInterface) {
+    Object.assign(this, paramData);
     this.name = paramData.name;
     this.value = paramData.value;
     this.properties = paramData.properties;

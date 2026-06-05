@@ -43,7 +43,11 @@ export type ESPCDFGroupOperationType =
   | "removeNodes"
   | "leave"
   | "issueUserNoC"
+  | "issueNodeNoC"
   | "startCommissioning"
+  | "getFabricDetails"
+  | "getNodesWithDetails"
+  | "convertToMatterFabric"
   | "setParams";
 
 /**
@@ -91,8 +95,20 @@ export interface ESPCDFGroupOperation {
   removeNodes(nodeIds: string[]): Promise<ESPCDFAPIResponse>;
   leave(): Promise<ESPCDFAPIResponse>;
 
-  // Optional Matter commissioning operations (present when isMatter === true)
+  // Optional Matter fabric / commissioning (`ESPRMFabric` — when adaptor exposes fabric ops)
+  /** Fetches and caches fabric credentials (`ESPRMFabric.getFabricDetails`). */
+  getFabricDetails?(): Promise<ESPCDFMatterFabricDetails>;
+  /** Converts a RainMaker home to a Matter fabric (`ESPRMGroup.convertToFabric`). */
+  convertToMatterFabric?(): Promise<ESPCDFGroup>;
+  /** Issues user NoC for this fabric (`ESPRMFabric.issueUserNoC`). */
   issueUserNoC?(): Promise<ESPCDFIssueUserNoCResponse>;
+  /** Issues node NoC during commissioning (`ESPRMFabric.issueNodeNoC`). */
+  issueNodeNoC?(
+    request: ESPCDFIssueNodeNoCRequest
+  ): Promise<ESPCDFMatterCommissioningRequest>;
+  /** Fabric nodes with full details (`ESPRMFabric.getNodesWithDetails`). */
+  getNodesWithDetails?(): Promise<ESPCDFNode[]>;
+  /** Starts Matter commissioning (`ESPRMFabric.startCommissioning`). */
   startCommissioning?(
     qrData: string,
     onProgress?: (message: ESPCDFCommissioningProgress) => void
@@ -118,6 +134,39 @@ export interface ESPCDFCommissioningProgress {
   description?: string;
 }
 
+/** Request for {@link ESPCDFGroup.issueNodeNoC} (`ESPRMIssueNodeNoCRequest`). */
+export interface ESPCDFIssueNodeNoCRequest {
+  csr: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  deviceId?: string;
+}
+
+/**
+ * Commissioning handle returned by {@link ESPCDFGroup.issueNodeNoC}
+ * (`ESPRMMatterCommissioningRequest`).
+ */
+export interface ESPCDFMatterCommissioningRequest {
+  requestId: string;
+  groupId: string;
+  status: string;
+  description: string;
+  certificates?: unknown[];
+  confirmMatterNodeCommissioning?(
+    request: Record<string, unknown>
+  ): Promise<unknown>;
+}
+
+/** Matter fabric credentials returned by {@link ESPCDFGroup.getFabricDetails} (`ESPRMFabricDetails`). */
+export interface ESPCDFMatterFabricDetails {
+  rootCa: string;
+  matterUserId: string;
+  ipk?: string;
+  groupCatIdOperate?: string;
+  groupCatIdAdmin?: string;
+  userCatId?: string;
+}
+
 export interface ESPCDFGroupInterface {
   identifier: string;
   name: string;
@@ -140,11 +189,11 @@ export interface ESPCDFGroupInterface {
   customData?: Record<string, any>;
   isMatter?: boolean;
   fabricId?: string;
-  fabricDetails?: Record<string, any>;
+  fabricDetails?: ESPCDFMatterFabricDetails;
   operations: ESPCDFGroupOperation;
   _raw: any;
   /**
-   * Present on {@link ESPCDFGroup} instances: group-level param publish.
+   * Group-level param publish.
    */
   setParams?(
     payload: Record<string, Record<string, unknown>>

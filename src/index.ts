@@ -20,6 +20,7 @@ export * from "./errors";
 export * from "./utils/common";
 export * from "./utils/constants";
 export * from "./utils/home";
+export * from "./utils/registeredTransports";
 export * from "./services";
 
 // Export entities
