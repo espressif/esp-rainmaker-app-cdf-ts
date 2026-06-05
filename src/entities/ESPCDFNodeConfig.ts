@@ -19,6 +19,7 @@ export class ESPCDFNodeConfig {
   info?: ESPCDFNodeInfoInterface;
 
   constructor(configData: ESPCDFNodeConfigInterface) {
+    Object.assign(this, configData);
     this.configVersion = configData.configVersion;
     this.attributes = configData.attributes;
     this.info = configData.info;

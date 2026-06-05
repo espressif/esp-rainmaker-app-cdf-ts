@@ -145,6 +145,36 @@ class GroupStore {
     }
   }
 
+  /**
+   * Replaces a group in the store (same {@link ESPCDFGroup.id}).
+   * Used when Matter conversion returns a new {@link ESPCDFGroup} / fabric instance from the SDK.
+   */
+  @action replaceGroup(groupId: string, group: ESPCDFGroup): ESPCDFGroup {
+    const observableGroup = makeEverythingObservable(
+      group,
+      new Set(["_raw", "operations"])
+    );
+
+    if (this.groupsByIDMap[groupId]) {
+      this.#synchronizer.detach(groupId);
+    }
+
+    this.#synchronizer.attach(observableGroup);
+    this.groupsByIDMap[groupId] = observableGroup;
+
+    for (const parent of Object.values(this.groupsByIDMap)) {
+      if (!parent.subGroups?.length) {
+        continue;
+      }
+      const index = parent.subGroups.findIndex((sg) => sg.id === groupId);
+      if (index !== -1) {
+        parent.subGroups[index] = observableGroup;
+      }
+    }
+
+    return observableGroup;
+  }
+
   @action deleteGroup(group: ESPCDFGroup) {
     const { id, parentId } = group;
     if (parentId) {

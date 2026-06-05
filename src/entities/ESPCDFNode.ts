@@ -86,6 +86,8 @@ export class ESPCDFNode implements ESPCDFNodeInterface {
   transportOrder?: string[];
   availableTransports?: Partial<Record<string, ESPCDFTransportConfig>>;
   operations: ESPCDFNodeOperation;
+  isMatter?: boolean;
+  nodeType?: string;
   _raw: any;
   [key: string]: any;
   readonly events: ESPCDFOperationEventEmitter<
@@ -95,6 +97,9 @@ export class ESPCDFNode implements ESPCDFNodeInterface {
   private propertyChangeEmitter: PropertyChangeEventEmitter;
 
   constructor(nodeData: ESPCDFNodeInterface) {
+    Object.assign(this, nodeData);
+    this.isMatter = nodeData.isMatter;
+    this.nodeType = nodeData.nodeType;
     this.identifier = nodeData.identifier;
     this.id = nodeData.id;
     this.connectivityStatus = nodeData.connectivityStatus;

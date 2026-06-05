@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v2.1.0]
+
+### Added
+
+- **Matter Fabric & Commissioning**:
+  - Group fabric operations on `ESPCDFGroup`: `getFabricDetails`, `convertToMatterFabric`, `issueNodeNoC`, `getNodesWithDetails` — complementing the existing `issueUserNoC` / `startCommissioning` flow.
+  - User operation `createFabric` on `ESPCDFUser` to create a new Matter fabric.
+  - Public Matter types: `ESPCDFMatterFabricDetails`, `ESPCDFIssueNodeNoCRequest`, `ESPCDFMatterCommissioningRequest`.
+  - `ESPCDFNode` exposes `isMatter` and `nodeType` for Matter-aware nodes.
+  - Group store synchronizer hooks for fabric conversion and fabric-detail updates.
+
+- **Transport Registry**:
+  - `subscriptionStore` persists client-registered transports (`local`, `matter_local`, …) across cloud sync.
+  - New `applyRegisteredTransports` utility and `RegisteredTransportsByNodeId` type (exported from the package root) replace the previous local-only merge helper.
+  - `groupStore.replaceGroup` action added to swap in the SDK fabric instance after Matter conversion.
+
+### Changed
+
+- **Entities**: constructors now call `Object.assign(this, data)` so adaptor-specific fields flow through without per-entity updates.
+- **Group types**: `ESPCDFGroupInterface.fabricDetails` is now `ESPCDFMatterFabricDetails` (previously `Record<string, any>`).
+- **User API**: `ESPCDFUser.getGroupsAndFabrics()` and `ESPCDFUser.prepareFabricForMatterCommissioning()` are removed (along with their entries in `ESPCDFUserOperation` / `ESPCDFUserOperationType`). Use the new fabric APIs on `ESPCDFGroup` / `ESPCDFUser` instead.
+
+### Removed
+
+- `mergeLocalTransportFromNodeMap` — superseded by the registered-transport registry in `subscriptionStore` and the new `applyRegisteredTransports` utility.
+
 ## [v2.0.1]
 
 ### Fixed

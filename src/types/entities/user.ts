@@ -39,6 +39,7 @@ export type ESPCDFUserOperationType =
   | "logout"
   | "setTimeZone"
   | "createGroup"
+  | "createFabric"
   | "getGroups"
   | "getNodeDetails"
   | "syncHomeWithNodes"
@@ -48,8 +49,6 @@ export type ESPCDFUserOperationType =
   | "addOnNetworkDevice"
   | "subscribeToNodeUpdates"
   | "unsubscribeFromNodeUpdates"
-  | "getGroupsAndFabrics"
-  | "prepareFabricForMatterCommissioning";
 
 export interface ESPCDFUserInfo {
   id: string;
@@ -85,6 +84,8 @@ export interface ESPCDFUserOperation {
   ): Promise<ESPCDFPaginatedAPIResponse<ESPCDFGroupSharingRequest[]>>;
   setTimeZone(timeZone: string): Promise<ESPCDFAPIResponse>;
   createGroup(groupRequest: ESPCDFCreateGroupRequest): Promise<ESPCDFGroup>;
+  /** Creates a Matter fabric (`ESPRMUser.createFabric`). */
+  createFabric?(groupRequest: ESPCDFCreateGroupRequest): Promise<ESPCDFGroup>;
   getGroups(): Promise<ESPCDFPaginatedAPIResponse<ESPCDFGroup[]>>;
   // Provisioning operations - unified interface
   createProvisioningDevice(
@@ -154,9 +155,6 @@ export interface ESPCDFUserOperation {
 
   // Optional Matter commissioning operations
   getGroupsAndFabrics?(): Promise<ESPCDFGroup[]>;
-  prepareFabricForMatterCommissioning?(
-    group: ESPCDFGroup
-  ): Promise<ESPCDFGroup>;
   isUserNocAvailableForFabric?(fabricId: string): Promise<boolean>;
   storePrecommissionInfo?(
     info: ESPCDFMatterPrecommissionInfo

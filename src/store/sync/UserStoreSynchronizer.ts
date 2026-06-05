@@ -131,6 +131,13 @@ export class UserStoreSynchronizer {
         }
         break;
 
+      case "createFabric":
+        // Add newly created Matter fabric to store (ESPRMFabric → ESPCDFGroup)
+        if (data) {
+          this.groupStore.addGroup(data);
+        }
+        break;
+
       case "getIssuedGroupSharingRequests":
         // Process issued group sharing requests
         if (data) {

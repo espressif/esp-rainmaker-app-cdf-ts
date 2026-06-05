@@ -11,6 +11,7 @@ import { ESPCDFNodesByIDMap } from "../types/store/node";
 import { ERROR_MESSAGE_MAP } from "../utils/common";
 import { ESPCDFNode } from "../entities/ESPCDFNode";
 import { NodeStoreSynchronizer } from "./sync/NodeStoreSynchronizer";
+import { applyRegisteredTransports } from "../utils/registeredTransports";
 
 class NodeStore {
   #rootStore: ESPCDF;
@@ -52,15 +53,17 @@ class NodeStore {
    * @param nodesList - The list of nodes to set
    */
   @action setNodesList(nodesList: ESPCDFNode[]) {
+    const registered =
+      this.#rootStore.subscriptionStore.getRegisteredTransportsSnapshot();
+
     this.nodesByIDMap = nodesList.reduce((acc, node) => {
-      // Make node and all nested properties observable recursively
-      // Exclude '_raw' and 'operations' as they are SDK-specific and don't need reactivity
+      const mergedNode = applyRegisteredTransports(node, registered);
+
       const observableNode = makeEverythingObservable(
-        node,
+        mergedNode,
         new Set(["_raw", "operations"])
       );
 
-      // Attach node to synchronizer for reactive updates
       this.#synchronizer.attach(observableNode);
 
       acc[node.id] = observableNode;
@@ -69,14 +72,15 @@ class NodeStore {
   }
 
   @action addNode(node: ESPCDFNode): ESPCDFNode {
-    // Make node and all nested properties observable recursively
-    // Exclude '_raw' and 'operations' as they are SDK-specific and don't need reactivity
+    const registered =
+      this.#rootStore.subscriptionStore.getRegisteredTransportsSnapshot();
+    const mergedNode = applyRegisteredTransports(node, registered);
+
     const observableNode = makeEverythingObservable(
-      node,
+      mergedNode,
       new Set(["_raw", "operations"])
     );
 
-    // Attach node to synchronizer for reactive updates
     this.#synchronizer.attach(observableNode);
 
     this.nodesByIDMap[node.id] = observableNode as ESPCDFNode;
@@ -96,6 +100,7 @@ class NodeStore {
     }
     // Detach node from synchronizer before deleting
     this.#synchronizer.detach(nodeId);
+    this.#rootStore.subscriptionStore.clearTransportsForNode(nodeId);
     delete this.nodesByIDMap[nodeId];
     // Remove node from all groups to maintain consistency
     // Groups store references to nodes, so we need to clean them up when a node is deleted
@@ -111,6 +116,7 @@ class NodeStore {
     Object.keys(this.nodesByIDMap).forEach((nodeId) => {
       this.#synchronizer.detach(nodeId);
     });
+    this.#rootStore.subscriptionStore.clearRegisteredTransports();
     this.nodesByIDMap = {};
   }
 }
