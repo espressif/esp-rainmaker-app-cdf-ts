@@ -33,6 +33,7 @@ export class ESPCDFDevice {
   >;
 
   constructor(deviceData: ESPCDFDeviceInterface) {
+    Object.assign(this, deviceData);
     this.name = deviceData.name;
     this.params = deviceData.params.map(
       (param) => new ESPCDFDeviceParam(param)

@@ -44,6 +44,7 @@ export class ESPCDFUser implements ESPCDFUserInterface {
   >;
 
   constructor(userData: ESPCDFUserInterface) {
+    Object.assign(this, userData);
     this.identifier = userData.identifier;
     this.userInfo = userData.userInfo;
     this.customData = userData.customData;
@@ -231,6 +232,23 @@ export class ESPCDFUser implements ESPCDFUserInterface {
       (response) => response
     );
   }
+
+  /**
+   * Creates a Matter fabric (`ESPRMUser.createFabric`).
+   * On success, {@link UserStoreSynchronizer} adds the fabric to the group store.
+   */
+  async createFabric(
+    groupRequest: ESPCDFCreateGroupRequest
+  ): Promise<ESPCDFGroup> {
+    if (!this.operations.createFabric) {
+      throw new Error("createFabric not available on current adaptor");
+    }
+    return this.runAndEmit(
+      "createFabric",
+      () => this.operations.createFabric!(groupRequest),
+      (fabric) => fabric
+    );
+  }
   async searchESPDevices(
     devicePrefix: string,
     transport: string
@@ -403,36 +421,10 @@ export class ESPCDFUser implements ESPCDFUserInterface {
     return this.operations.assumeRole(request);
   }
 
-  // Matter commissioning operations (available when ESPRMMatterBase adaptor is active)
-
-  async getGroupsAndFabrics(): Promise<ESPCDFGroup[]> {
-    if (!this.operations.getGroupsAndFabrics) {
-      throw new Error(
-        "getGroupsAndFabrics not available on current adaptor"
-      );
-    }
-    return this.runAndEmit(
-      "getGroupsAndFabrics",
-      () => this.operations.getGroupsAndFabrics!(),
-      (result) => result
-    );
-  }
-
-  async prepareFabricForMatterCommissioning(
-    group: ESPCDFGroup
-  ): Promise<ESPCDFGroup> {
-    if (!this.operations.prepareFabricForMatterCommissioning) {
-      throw new Error(
-        "prepareFabricForMatterCommissioning not available on current adaptor"
-      );
-    }
-    return this.runAndEmit(
-      "prepareFabricForMatterCommissioning",
-      () => this.operations.prepareFabricForMatterCommissioning!(group),
-      (result) => result
-    );
-  }
-
+  /**
+   * Returns whether a user NOC is already stored for the given fabric id.
+   * @param fabricId - Matter fabric id
+   */
   async isUserNocAvailableForFabric(fabricId: string): Promise<boolean> {
     if (!this.operations.isUserNocAvailableForFabric) {
       return false;

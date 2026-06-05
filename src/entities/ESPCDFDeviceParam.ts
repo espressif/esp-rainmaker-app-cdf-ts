@@ -37,6 +37,7 @@ export class ESPCDFDeviceParam implements ESPCDFDeviceParamInterface {
   >;
 
   constructor(paramData: ESPCDFDeviceParamInterface) {
+    Object.assign(this, paramData);
     this.name = paramData.name;
     this.value = paramData.value;
     this.properties = paramData.properties;
