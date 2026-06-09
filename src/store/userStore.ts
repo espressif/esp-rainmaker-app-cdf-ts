@@ -11,7 +11,6 @@ import { UserStoreSynchronizer } from "./sync/UserStoreSynchronizer";
 import { ESPCDFUserInfo, GroupStoreCallbacks } from "../types";
 import { Auth } from "../utils/auth";
 import { findGroupById } from "../utils/home";
-import { applyRegisteredTransports } from "../utils/registeredTransports";
 
 class UserStore {
   #synchronizer: UserStoreSynchronizer;
@@ -140,12 +139,8 @@ class UserStore {
             group.nodeDetails = Array.from(detailsById.values());
           }
           if (nodeStore.setNodesList && nodes.length > 0) {
-            const registered =
-              this.rootStore.subscriptionStore.getRegisteredTransportsSnapshot();
-            const merged = nodes.map((node) =>
-              applyRegisteredTransports(node, registered),
-            );
-            nodeStore.setNodesList(merged);
+            // Pass nodes directly; nodeStore.setNodesList applies registered transports internally.
+            nodeStore.setNodesList(nodes);
           }
         });
       },

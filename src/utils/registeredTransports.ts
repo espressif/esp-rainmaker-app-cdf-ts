@@ -31,13 +31,19 @@ export function applyRegisteredTransports(
     return node;
   }
 
-  const merged = {
-    ...node,
-    availableTransports: {
-      ...(node.availableTransports || {}),
-      ...transports,
-    },
-  } as ESPCDFNode;
+  // Use Object.create to preserve the ESPCDFNode class prototype (and its methods like
+  // subscribe/dispose). A plain object spread `{...node}` would strip the prototype, causing
+  // "node.subscribe is not a function" when NodeStoreSynchronizer.attach() is called.
+  const merged = Object.assign(
+    Object.create(Object.getPrototypeOf(node)) as ESPCDFNode,
+    node,
+    {
+      availableTransports: {
+        ...(node.availableTransports || {}),
+        ...transports,
+      },
+    }
+  );
 
   const raw = merged._raw as Record<string, unknown> | undefined;
   if (raw && typeof raw === "object") {
