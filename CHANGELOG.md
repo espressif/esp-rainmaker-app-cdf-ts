@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v2.1.1]
+
+### Added
+
+- **Provisioning**: `ESPCDFProvisioningDeviceOperations.provision()` now accepts an optional `options` parameter (`Record<string, any>`) for adaptor-specific provision settings.
+
+### Fixed
+
+- **Transport Registry**: `applyRegisteredTransports` uses `Object.create` instead of object spread so the `ESPCDFNode` prototype (and methods such as `subscribe` / `dispose`) is preserved when merging client-registered transports.
+- **User Store**: removed duplicate registered-transport merge in `userStore`; `nodeStore.setNodesList` already applies registered transports internally.
+
 ## [v2.1.0]
 
 ### Added
