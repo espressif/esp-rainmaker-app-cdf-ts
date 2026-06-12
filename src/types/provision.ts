@@ -260,7 +260,8 @@ export interface ESPCDFProvisioningDeviceOperations {
     password: string,
     onProgress?: ESPCDFProvisionProgressCallback,
     homeId?: string,
-    provisionType?: string
+    provisionType?: string,
+    options?: Record<string, any>
   ): Promise<void>;
 
   /**
