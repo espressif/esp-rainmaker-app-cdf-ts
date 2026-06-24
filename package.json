@@ -20,7 +20,8 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc",
     "format": "prettier --write .",
-    "test": "jest"
+    "test": "jest",
+    "genDocs": "rm -rf ./docs && typedoc"
   },
   "dependencies": {
     "mobx": "^6.13.5"
