@@ -29,14 +29,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          cache: "yarn"
+          cache: "npm"
 
       - name: Install Dependencies
-        run: yarn install
+        run: npm ci
 
       - name: Generate Documentation
-        run: |
-          yarn typedoc
+        run: npm run genDocs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
