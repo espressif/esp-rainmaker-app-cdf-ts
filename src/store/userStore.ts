@@ -40,6 +40,11 @@ class UserStore {
     );
   }
 
+  /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
+  dispose(): void {
+    this.#synchronizer.dispose();
+  }
+
   @computed get user() {
     const registry = this.rootStore.sdkAdaptorRegistry;
     const activeAdaptorIdentifier = registry.getActiveAdaptorIdentifier() ?? "";
