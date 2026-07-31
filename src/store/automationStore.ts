@@ -27,6 +27,11 @@ export default class AutomationStore {
     this.#synchronizer = new AutomationStoreSynchronizer(this);
   }
 
+  /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
+  dispose(): void {
+    this.#synchronizer.dispose();
+  }
+
   get automationsList(): ESPCDFAutomation[] {
     return Object.values(this.ESPCDFAutomationsByIDMap);
   }

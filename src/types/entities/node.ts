@@ -53,6 +53,11 @@ export interface ESPCDFNodeOperation {
   addAutomation?(automationDetails: Record<string, any>): Promise<any>;
   setTimeZone(timeZone: string): Promise<ESPCDFAPIResponse>;
   updateMetadata(metadata: Record<string, any>): Promise<ESPCDFAPIResponse>;
+
+  createCmdRespRequest?<T>(params: T): Promise<T>;
+  getCmdRespRequestById?<T>(requestId: string): Promise<T>;
+  getCmdRespRequestList?<T>(params?: T): Promise<T>;
+  cancelCmdRespRequest?<T>(params: T): Promise<T>;
 }
 
 /**

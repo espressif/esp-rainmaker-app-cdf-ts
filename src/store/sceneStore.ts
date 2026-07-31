@@ -37,6 +37,11 @@ class SceneStore {
     this.#synchronizer = new SceneStoreSynchronizer(this, rootStore || null);
   }
 
+  /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
+  dispose(): void {
+    this.#synchronizer.dispose();
+  }
+
   /**
    * Getter for scenes indexed by ID
    * @returns Map of scenes indexed by scene ID

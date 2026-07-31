@@ -19,6 +19,11 @@ class ScheduleStore {
     this.#synchronizer = new ScheduleStoreSynchronizer(this, rootStore || null);
   }
 
+  /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
+  dispose(): void {
+    this.#synchronizer.dispose();
+  }
+
   /**
    * Getter for schedules indexed by ID
    * @returns Map of schedules indexed by schedule ID
