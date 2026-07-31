@@ -159,6 +159,11 @@ export interface ESPCDFUserOperation {
   storePrecommissionInfo?(
     info: ESPCDFMatterPrecommissionInfo
   ): Promise<void>;
+
+  createCmdRespRequest?<T>(params: T): Promise<T>;
+  getCmdRespRequestById?<T>(requestId: string, nodeId?: string): Promise<T>;
+  getCmdRespRequestList?<T>(params?: T): Promise<T>;
+  cancelCmdRespRequest?<T>(params: T): Promise<T>;
 }
 
 export interface ESPCDFSubscribeToNodeUpdatesRequestParams {

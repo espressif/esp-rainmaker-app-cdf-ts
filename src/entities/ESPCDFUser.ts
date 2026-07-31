@@ -442,4 +442,32 @@ export class ESPCDFUser implements ESPCDFUserInterface {
     }
     return this.operations.storePrecommissionInfo(info);
   }
+
+  createCmdRespRequest<T>(params: T): Promise<T> {
+    if (!this.operations.createCmdRespRequest) {
+      throw new Error("createCmdRespRequest is not available on the current adaptor");
+    }
+    return this.operations.createCmdRespRequest(params);
+  }
+
+  getCmdRespRequestById<T>(requestId: string, nodeId?: string): Promise<T> {
+    if (!this.operations.getCmdRespRequestById) {
+      throw new Error("getCmdRespRequestById is not available on the current adaptor");
+    }
+    return this.operations.getCmdRespRequestById(requestId, nodeId);
+  }
+
+  getCmdRespRequestList<T>(params?: T): Promise<T> {
+    if (!this.operations.getCmdRespRequestList) {
+      throw new Error("getCmdRespRequestList is not available on the current adaptor");
+    }
+    return this.operations.getCmdRespRequestList(params);
+  }
+
+  cancelCmdRespRequest<T>(params: T): Promise<T> {
+    if (!this.operations.cancelCmdRespRequest) {
+      throw new Error("cancelCmdRespRequest is not available on the current adaptor");
+    }
+    return this.operations.cancelCmdRespRequest(params);
+  }
 }
