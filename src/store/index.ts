@@ -120,6 +120,34 @@ export class ESPCDF {
     }
     return ESPCDF.instance;
   }
+
+  /**
+   * Releases every entity subscription held by this instance's stores.
+   *
+   * Each store owns its synchronizer as a private field, so teardown has to be
+   * forwarded store by store — there is no way to reach them from outside.
+   */
+  dispose(): void {
+    this.nodeStore.dispose();
+    this.groupStore.dispose();
+    this.userStore.dispose();
+    this.scheduleStore.dispose();
+    this.automationStore.dispose();
+    this.sceneStore.dispose();
+  }
+
+  /**
+   * Tears down the singleton so the next {@link initCDF} builds a fresh one.
+   *
+   * `getInstance` returns the cached instance and ignores the config it is
+   * handed, so a host that needs to re-initialise against a DIFFERENT backend
+   * (a deployment switch) must clear the singleton first or it silently keeps
+   * running on the previous backend's stores.
+   */
+  static dispose(): void {
+    ESPCDF.instance?.dispose();
+    ESPCDF.instance = null;
+  }
 }
 
 /**
@@ -139,4 +167,15 @@ export const initCDF = async (config: ESPCDFconfig): Promise<ESPCDF> => {
     );
   }
   return ESPCDF.getInstance(config);
+};
+
+/**
+ * Disposes the singleton CDF store instance, the counterpart to {@link initCDF}.
+ *
+ * Safe to call when no instance exists. Call this before re-initialising against
+ * a different backend; without it `initCDF` hands back the existing instance and
+ * discards the new config.
+ */
+export const disposeCDF = (): void => {
+  ESPCDF.dispose();
 };

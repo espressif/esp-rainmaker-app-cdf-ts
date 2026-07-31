@@ -24,6 +24,11 @@ class NodeStore {
     this.#synchronizer = new NodeStoreSynchronizer(this);
   }
 
+  /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
+  dispose(): void {
+    this.#synchronizer.dispose();
+  }
+
   /**
    * Public getter for nodesByIDMap
    * Following the pattern from existing-app-cdf to avoid MobX deep conversion issues

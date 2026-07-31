@@ -53,6 +53,11 @@ class GroupStore {
     this.#synchronizer = new GroupStoreSynchronizer(this, rootStore);
   }
 
+  /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
+  dispose(): void {
+    this.#synchronizer.dispose();
+  }
+
   // Expose rootStore for synchronizer access
   get rootStore(): ESPCDF {
     return this.#rootStore;

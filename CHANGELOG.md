@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v2.2.0]
+
+### Added
+
+- **CDF Lifecycle**: new `disposeCDF()` top-level API — the counterpart to `initCDF` — that releases all store entity subscriptions and clears the `ESPCDF` singleton. Call it before re-initializing against a different backend; without it, `initCDF` returns the cached instance and ignores the new config. Safe to call when no instance exists.
+- **Stores**: `ESPCDF.dispose()` (static and instance) plus `dispose()` on `nodeStore`, `groupStore`, `userStore`, `scheduleStore`, `automationStore`, and `sceneStore`, each releasing its synchronizer's entity subscriptions so a disposed instance leaves no live listeners behind.
+- **User Files**: upload, download, list, get-by-id, and create-upload-request APIs on `ESPCDFUser`.
+- **Cmd-Resp**: create, list, get, and cancel APIs on `ESPCDFNode` and `ESPCDFUser`, with a clear error when unsupported by the adaptor.
+
 ## [v2.1.1]
 
 ### Added

@@ -442,4 +442,71 @@ export class ESPCDFUser implements ESPCDFUserInterface {
     }
     return this.operations.storePrecommissionInfo(info);
   }
+
+  createCmdRespRequest<T>(params: T): Promise<T> {
+    if (!this.operations.createCmdRespRequest) {
+      throw new Error("createCmdRespRequest is not available on the current adaptor");
+    }
+    return this.operations.createCmdRespRequest(params);
+  }
+
+  getCmdRespRequestById<T>(requestId: string, nodeId?: string): Promise<T> {
+    if (!this.operations.getCmdRespRequestById) {
+      throw new Error("getCmdRespRequestById is not available on the current adaptor");
+    }
+    return this.operations.getCmdRespRequestById(requestId, nodeId);
+  }
+
+  getCmdRespRequestList<T>(params?: T): Promise<T> {
+    if (!this.operations.getCmdRespRequestList) {
+      throw new Error("getCmdRespRequestList is not available on the current adaptor");
+    }
+    return this.operations.getCmdRespRequestList(params);
+  }
+
+  cancelCmdRespRequest<T>(params: T): Promise<T> {
+    if (!this.operations.cancelCmdRespRequest) {
+      throw new Error("cancelCmdRespRequest is not available on the current adaptor");
+    }
+    return this.operations.cancelCmdRespRequest(params);
+  }
+
+  createFileUploadRequest<T>(params: T): Promise<T> {
+    if (!this.operations.createFileUploadRequest) {
+      throw new Error("createFileUploadRequest is not available on the current adaptor");
+    }
+    return this.operations.createFileUploadRequest(params);
+  }
+
+  uploadFile<T>(
+    content: Blob | ArrayBuffer | Uint8Array,
+    params: T,
+    onProgress?: (progress: unknown) => void
+  ): Promise<T> {
+    if (!this.operations.uploadFile) {
+      throw new Error("uploadFile is not available on the current adaptor");
+    }
+    return this.operations.uploadFile(content, params, onProgress);
+  }
+
+  getFiles<T>(params?: T): Promise<T> {
+    if (!this.operations.getFiles) {
+      throw new Error("getFiles is not available on the current adaptor");
+    }
+    return this.operations.getFiles(params);
+  }
+
+  getFileById<T>(fileId: string, params?: T): Promise<T> {
+    if (!this.operations.getFileById) {
+      throw new Error("getFileById is not available on the current adaptor");
+    }
+    return this.operations.getFileById(fileId, params);
+  }
+
+  downloadFile<T>(fileId: string, params?: T): Promise<T> {
+    if (!this.operations.downloadFile) {
+      throw new Error("downloadFile is not available on the current adaptor");
+    }
+    return this.operations.downloadFile(fileId, params);
+  }
 }
