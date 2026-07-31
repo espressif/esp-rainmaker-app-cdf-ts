@@ -164,6 +164,16 @@ export interface ESPCDFUserOperation {
   getCmdRespRequestById?<T>(requestId: string, nodeId?: string): Promise<T>;
   getCmdRespRequestList?<T>(params?: T): Promise<T>;
   cancelCmdRespRequest?<T>(params: T): Promise<T>;
+
+  createFileUploadRequest?<T>(params: T): Promise<T>;
+  uploadFile?<T>(
+    content: Blob | ArrayBuffer | Uint8Array,
+    params: T,
+    onProgress?: (progress: unknown) => void
+  ): Promise<T>;
+  getFiles?<T>(params?: T): Promise<T>;
+  getFileById?<T>(fileId: string, params?: T): Promise<T>;
+  downloadFile?<T>(fileId: string, params?: T): Promise<T>;
 }
 
 export interface ESPCDFSubscribeToNodeUpdatesRequestParams {
