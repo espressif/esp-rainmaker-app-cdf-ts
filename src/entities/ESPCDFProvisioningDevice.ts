@@ -165,4 +165,40 @@ export class ESPCDFProvisioningDevice implements ESPCDFProvisioningDeviceInterfa
   async checkOnNetworkProvisioning(): Promise<boolean> {
     return this.operations.checkOnNetworkProvisioning?.() ?? false;
   }
+
+  /**
+   * Clear the device's Wi-Fi state over the open provisioning session.
+   *
+   * Only the Wi-Fi credentials are cleared — the user-node association survives,
+   * which is what lets {@link retryNetworkCredentials} resume rather than
+   * re-provision from scratch.
+   *
+   * Resolves `false` when the adaptor does not implement it, so callers can
+   * treat "not supported" and "device refused" the same way.
+   * @returns `true` when the device acknowledged the reset.
+   */
+  async resetWifiStatus(): Promise<boolean> {
+    return this.operations.resetWifiStatus?.() ?? false;
+  }
+
+  /**
+   * Re-send Wi-Fi credentials after {@link resetWifiStatus}, resuming the flow
+   * the first attempt started instead of repeating its association.
+   * @param ssid - Wi-Fi SSID, unchanged from the first attempt.
+   * @param password - The corrected Wi-Fi password.
+   * @param onProgress - Progress callback; emits the same messages as `provision`.
+   * @throws When the adaptor cannot resume a provisioning flow.
+   */
+  async retryNetworkCredentials(
+    ssid: string,
+    password: string,
+    onProgress?: ESPCDFProvisionProgressCallback
+  ): Promise<void> {
+    if (!this.operations.retryNetworkCredentials) {
+      throw new Error(
+        "retryNetworkCredentials is not supported by this provisioning adaptor"
+      );
+    }
+    return this.operations.retryNetworkCredentials(ssid, password, onProgress);
+  }
 }
