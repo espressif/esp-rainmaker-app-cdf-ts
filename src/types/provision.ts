@@ -327,6 +327,43 @@ export interface ESPCDFProvisioningDeviceOperations {
    * @returns Promise resolving to `true` for on-network devices, `false` otherwise.
    */
   checkOnNetworkProvisioning?(): Promise<boolean>;
+
+  /**
+   * Ask the device to clear its Wi-Fi state over the open provisioning session.
+   *
+   * Sent on the network-control endpoint, so it requires an established session
+   * and leaves the user-node association intact — only the Wi-Fi credentials are
+   * cleared. That is what makes an in-session retry possible after the wrong
+   * Wi-Fi password was supplied, instead of asking the user to factory reset the
+   * board and start over.
+   *
+   * Optional: adaptors whose transport has no network-control endpoint may omit
+   * it; the entity wrapper resolves to `false`.
+   * @returns Promise resolving to `true` when the device acknowledged the reset.
+   */
+  resetWifiStatus?(): Promise<boolean>;
+
+  /**
+   * Re-send Wi-Fi credentials after {@link resetWifiStatus}, reusing the
+   * association established by the first attempt.
+   *
+   * Not the same as calling `provision` again: association (and, on the MQTT
+   * flow, node mapping and timezone) already happened, and the values those
+   * steps produced are held by the SDK. Re-running the whole flow would repeat
+   * association, while sending credentials alone would skip the steps that must
+   * still follow them — so the replay belongs behind this single operation.
+   *
+   * Optional: adaptors that cannot resume a flow may omit it.
+   * @param ssid - Wi-Fi SSID, unchanged from the first attempt.
+   * @param password - The corrected Wi-Fi password.
+   * @param onProgress - Progress callback; emits the same messages as `provision`.
+   * @returns Promise resolving when the resumed flow completes.
+   */
+  retryNetworkCredentials?(
+    ssid: string,
+    password: string,
+    onProgress?: ESPCDFProvisionProgressCallback
+  ): Promise<void>;
 }
 
 /**
@@ -362,6 +399,16 @@ export interface ESPCDFProvisionAdapterInterface {
   stopESPDevicesSearch(): Promise<void>;
   disconnect(deviceName: string): Promise<void>;
   getDeviceVersionInfo(deviceName: string): Promise<Record<string, any>>;
+  /**
+   * Clear the device's Wi-Fi state over the open provisioning session.
+   * Requires an established session; leaves the user-node association intact.
+   *
+   * Optional so adapters written against an earlier release keep compiling —
+   * same choice as the RainMaker and RainMaker Neo SDKs.
+   * @param deviceName - Name of the connected provisioning device.
+   * @returns Promise resolving to `true` when the device acknowledged the reset.
+   */
+  resetWifiStatus?(deviceName: string): Promise<boolean>;
 }
 
 export type ESPProvisionAdapterInterface = ESPCDFProvisionAdapterInterface;
