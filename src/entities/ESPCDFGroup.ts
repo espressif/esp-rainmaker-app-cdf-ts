@@ -10,6 +10,7 @@ import {
   ESPCDFAPIDataResponse,
   ESPCDFSceneCreateInput,
 } from "../types";
+import { dedupe } from "../utils/singleFlight";
 import {
   ESPCDFGroupOperationType,
   ESPCDFGroupInterface,
@@ -32,6 +33,13 @@ import {
   ESPCDFOperationEventEmitter,
   ESPCDFOperationListener,
 } from "../utils/OperationEventEmitter";
+
+/** Fields `adoptFrom` must not copy: listeners stay, nested lists are merged by the store. */
+const GROUP_ADOPT_SKIP_KEYS: ReadonlySet<string> = new Set([
+  "events",
+  "subGroups",
+  "nodeDetails",
+]);
 
 export class ESPCDFGroup implements ESPCDFGroupInterface {
   identifier: string;
@@ -148,9 +156,34 @@ export class ESPCDFGroup implements ESPCDFGroupInterface {
     }
   }
 
+  /**
+   * Takes over the scalar data and SDK bindings of a freshly transformed group
+   * while this instance (the one the store and the UI hold) stays the same object.
+   * `subGroups` and `nodeDetails` are merged by the group store, which knows the
+   * existing instances to keep.
+   */
+  adoptFrom(incoming: ESPCDFGroup): void {
+    for (const key of Object.keys(incoming)) {
+      if (GROUP_ADOPT_SKIP_KEYS.has(key)) {
+        continue;
+      }
+      (this as unknown as Record<string, unknown>)[key] = (
+        incoming as unknown as Record<string, unknown>
+      )[key];
+    }
+    this._raw = incoming._raw;
+    this.operations = incoming.operations;
+  }
+
   // Group information methods
+  /**
+   * Fetches this group's nodes into the store ({@link nodeDetails}; a home's
+   * rooms are filled from the same reply). Concurrent calls share one fetch.
+   */
   async getNodes(): Promise<ESPCDFNode[]> {
-    return this.runAndEmit("getNodes", () => this.operations.getNodes(), (nodes) => nodes);
+    return dedupe(`group.getNodes:${this.id}`, () =>
+      this.runAndEmit("getNodes", () => this.operations.getNodes(), (nodes) => nodes)
+    );
   }
 
   async getSubGroups(): Promise<ESPCDFGroup[]> {

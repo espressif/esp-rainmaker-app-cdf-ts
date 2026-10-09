@@ -16,4 +16,14 @@ export interface GroupStoreCallbacks {
   addNodesToGroup(groupId: string, nodes: ESPCDFNode[]): void;
   /** Handle node update events */
   onNodeUpdate?: (update: Record<string, any>) => void;
+  /** `true` while the home tree in the store is synced and nothing has marked it stale. */
+  isTreeSynced?: () => boolean;
+  /** Records that a full home sync finished. */
+  markTreeSynced?: () => void;
+  /** The currently selected home, if any. */
+  getCurrentHome?: () => ESPCDFGroup | null;
+  /** A node already held by the store, if any. */
+  getNodeById?: (nodeId: string) => ESPCDFNode | undefined;
+  /** Saves the home tree to disk after a successful full sync (fire-and-forget). */
+  persistSnapshot?: () => void;
 }
