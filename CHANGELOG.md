@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
+## [v2.4.0]
+
+### Added
+
+- **Store-first home sync**: `user.syncHomeWithNodes()` fetches the home tree once and then serves it from the store. Pass `{ force: true }` to fetch again (for example on pull-to-refresh or login). Deleting or leaving a home updates the store in place without a new sync.
+- **Shared in-flight requests**: concurrent calls to `getNodeDetails()` or `group.getNodes()` for the same target share a single network request instead of each fetching on their own.
+- **One node fetch per home**: nodes fetched for a home are attached to the home and to every room in it, so the rooms no longer need their own requests.
+- **Local snapshot**: `initCDF({ snapshot })` keeps a copy of the home tree in app storage and restores it on `restoreSession`, so the first screen paints before the network answers. The snapshot is saved automatically whenever the tree changes, is kept per user, and is cleared on logout and account deletion. Operations on restored entities wait for the first live sync and then run normally. `ESPCDF.isSnapshot` and `groupStore.dataSource` tell the UI whether it is showing restored data.
+- **Tree sync state**: `groupStore.treeSynced`, `markTreeSynced()` and `invalidateTree()` expose and control whether the home tree is considered synced.
+
+### Changed
+
+- **Identity-preserving merge**: a sync updates existing group and node instances in place instead of replacing them, so screens do not flash and references held by the UI stay valid across syncs.
+
+### Fixed
+
+- **Group updates**: removing nodes from a group now updates the group's node list, updating metadata now writes it to the group, and adding nodes applies the optimistic update to rooms as well as homes.
+
 ## [v2.3.0]
 
 ### Added
