@@ -15,4 +15,5 @@ export * from "./subscription";
 export * from "./localControl";
 export * from "./localDiscovery";
 export * from "./storage";
+export * from "./snapshot";
 export * from "./entities";

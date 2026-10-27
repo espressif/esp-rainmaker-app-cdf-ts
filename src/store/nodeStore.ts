@@ -12,6 +12,19 @@ import { ERROR_MESSAGE_MAP } from "../utils/common";
 import { ESPCDFNode } from "../entities/ESPCDFNode";
 import { NodeStoreSynchronizer } from "./sync/NodeStoreSynchronizer";
 import { applyRegisteredTransports } from "../utils/registeredTransports";
+import { NON_OBSERVABLE_ENTITY_KEYS } from "../utils/singleFlight";
+import type { RegisteredTransportsByNodeId } from "../types";
+
+/**
+ * Node keys kept out of MobX: SDK bindings plus the listener registries. A deep-
+ * observable `Set` wraps every function added to it in an `autoAction`, so
+ * `delete(listener)` no longer matches and unsubscribe silently fails.
+ */
+const NON_OBSERVABLE_NODE_KEYS: Set<string> = new Set([
+  ...NON_OBSERVABLE_ENTITY_KEYS,
+  "events",
+  "propertyChangeEmitter",
+]);
 
 class NodeStore {
   #rootStore: ESPCDF;
@@ -21,7 +34,9 @@ class NodeStore {
 
   constructor(rootStore: ESPCDF) {
     this.#rootStore = rootStore;
-    this.#synchronizer = new NodeStoreSynchronizer(this);
+    this.#synchronizer = new NodeStoreSynchronizer(this, () =>
+      rootStore.markTreeChanged()
+    );
   }
 
   /** Releases this store's entity subscriptions. Called by `ESPCDF.dispose`. */
@@ -57,39 +72,50 @@ class NodeStore {
    * Set the list of nodes in the store.
    * @param nodesList - The list of nodes to set
    */
+  /**
+   * Upserts nodes from a network response. A node whose id is already in the
+   * store is updated in place (same instance), so lists and group references
+   * stay valid; new ids are added. Nothing is removed.
+   */
   @action setNodesList(nodesList: ESPCDFNode[]) {
     const registered =
       this.#rootStore.subscriptionStore.getRegisteredTransportsSnapshot();
-
-    this.nodesByIDMap = nodesList.reduce((acc, node) => {
-      const mergedNode = applyRegisteredTransports(node, registered);
-
-      const observableNode = makeEverythingObservable(
-        mergedNode,
-        new Set(["_raw", "operations"])
-      );
-
-      this.#synchronizer.attach(observableNode);
-
-      acc[node.id] = observableNode;
-      return acc;
-    }, this.nodesByIDMap as ESPCDFNodesByIDMap);
+    for (const node of nodesList) {
+      this.#upsertNode(node, registered);
+    }
+    this.#rootStore.markTreeChanged();
   }
 
   @action addNode(node: ESPCDFNode): ESPCDFNode {
     const registered =
       this.#rootStore.subscriptionStore.getRegisteredTransportsSnapshot();
-    const mergedNode = applyRegisteredTransports(node, registered);
+    const stored = this.#upsertNode(node, registered);
+    this.#rootStore.markTreeChanged();
+    return stored;
+  }
 
+  #upsertNode(
+    node: ESPCDFNode,
+    registered: RegisteredTransportsByNodeId
+  ): ESPCDFNode {
+    const mergedNode = applyRegisteredTransports(node, registered);
     const observableNode = makeEverythingObservable(
       mergedNode,
-      new Set(["_raw", "operations"])
+      NON_OBSERVABLE_NODE_KEYS
     );
+    const existing = this.nodesByIDMap[node.id];
 
-    this.#synchronizer.attach(observableNode);
+    if (!existing) {
+      this.#synchronizer.attach(observableNode);
+      this.nodesByIDMap[node.id] = observableNode;
+      return observableNode;
+    }
 
-    this.nodesByIDMap[node.id] = observableNode as ESPCDFNode;
-    return observableNode;
+    // Detach while the old devices/services are still reachable, then re-attach the new ones.
+    this.#synchronizer.detach(existing.id);
+    existing.adoptFrom(observableNode);
+    this.#synchronizer.attach(existing);
+    return existing;
   }
 
   @action updateNode(nodeId: string, update: Partial<ESPCDFNode>) {
@@ -97,6 +123,7 @@ class NodeStore {
       throw new Error(ERROR_MESSAGE_MAP.NODE_NOT_FOUND(nodeId));
     }
     Object.assign(this.nodesByIDMap[nodeId], update) as ESPCDFNode;
+    this.#rootStore.markTreeChanged();
   }
 
   @action deleteNode(nodeId: string) {
@@ -110,6 +137,7 @@ class NodeStore {
     // Remove node from all groups to maintain consistency
     // Groups store references to nodes, so we need to clean them up when a node is deleted
     this.#rootStore.groupStore.removeNodeFromAllGroups(nodeId);
+    this.#rootStore.markTreeChanged();
   }
 
   getNodeById(nodeId: string): ESPCDFNode | undefined {
@@ -123,6 +151,7 @@ class NodeStore {
     });
     this.#rootStore.subscriptionStore.clearRegisteredTransports();
     this.nodesByIDMap = {};
+    this.#rootStore.markTreeChanged();
   }
 }
 

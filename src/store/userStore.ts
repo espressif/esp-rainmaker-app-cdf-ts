@@ -4,13 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { observable, action, extendObservable, computed, runInAction } from "mobx";
+import { observable, action, extendObservable, computed } from "mobx";
 import { ESPCDF } from "./index";
 import { ESPCDFUser } from "../entities/ESPCDFUser";
 import { UserStoreSynchronizer } from "./sync/UserStoreSynchronizer";
 import { ESPCDFUserInfo, GroupStoreCallbacks } from "../types";
 import { Auth } from "../utils/auth";
-import { findGroupById } from "../utils/home";
 
 class UserStore {
   #synchronizer: UserStoreSynchronizer;
@@ -62,10 +61,17 @@ class UserStore {
       const adaptor = this.rootStore.sdkAdaptorRegistry.getActiveAdaptor();
       const resp = await adaptor.getCurrentLoggedInUser();
       if (resp?.data) {
-        return this.setAuthorizationEntityForAdaptor(
+        const entity = this.setAuthorizationEntityForAdaptor(
           adaptor._identifier,
           resp.data
         );
+        // Paint from the last saved tree first; the first sync replaces it in place.
+        try {
+          await this.rootStore.hydrateSnapshot();
+        } catch (error) {
+          console.warn("[UserStore] snapshot restore failed:", error);
+        }
+        return entity;
       }
     } catch {
       console.error("[UserStore] User not logged in");
@@ -124,33 +130,22 @@ class UserStore {
     const nodeStore = this.rootStore.nodeStore;
     const callbacks: GroupStoreCallbacks = {
       setGroupsList: (groups) => groupStore.setGroupsList(groups),
-      setCurrentHomeId: (id) => {
+      setCurrentHomeId: action((id: string | null) => {
         groupStore.currentHomeId = id;
-      },
+      }),
       addGroup: (group) => groupStore.addGroup(group),
-      addNodesToGroup: (groupId, nodes) => {
-        runInAction(() => {
-          const group = findGroupById(groupStore.groupsList, groupId);
-          if (group) {
-            const existingIds = new Set(group.nodeIds ?? []);
-            const detailsById = new Map(
-              (group.nodeDetails ?? []).map((n) => [n.id, n])
-            );
-            for (const node of nodes) {
-              existingIds.add(node.id);
-              detailsById.set(node.id, node);
-            }
-            group.nodeIds = Array.from(existingIds);
-            group.nodeDetails = Array.from(detailsById.values());
-          }
-          if (nodeStore.setNodesList && nodes.length > 0) {
-            // Pass nodes directly; nodeStore.setNodesList applies registered transports internally.
-            nodeStore.setNodesList(nodes);
-          }
-        });
-      },
+      addNodesToGroup: (groupId, nodes) => groupStore.attachNodesToGroup(groupId, nodes),
       onNodeUpdate: (update) => {
         this.rootStore.subscriptionStore.nodeUpdates.listen(update);
+      },
+      isTreeSynced: () => groupStore.treeSynced,
+      markTreeSynced: () => groupStore.markTreeSynced(),
+      getCurrentHome: () => this.rootStore.getCurrentHome() ?? null,
+      getNodeById: (nodeId) => nodeStore.getNodeById(nodeId),
+      persistSnapshot: () => {
+        void this.rootStore.persistSnapshot().catch((error: unknown) => {
+          console.warn("[UserStore] snapshot persist failed:", error);
+        });
       },
     };
     authEntity.setStoreCallbacks?.(callbacks);

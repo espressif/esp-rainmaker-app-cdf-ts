@@ -25,6 +25,8 @@ import {
   ESPCDFAssumeRoleRequest,
   ESPCDFAssumeRoleResponse,
 } from "../types";
+import type { ESPCDFSyncOptions } from "../types/cdf";
+import { dedupe } from "../utils/singleFlight";
 import {
   ESPCDFOperationEventEmitter,
   ESPCDFOperationListener,
@@ -308,11 +310,14 @@ export class ESPCDFUser implements ESPCDFUserInterface {
       (result) => result
     );
   }
+  /** Fetches one node's details into the store. Concurrent calls for the same node share one fetch. */
   async getNodeDetails(nodeId: string): Promise<ESPCDFNode> {
-    return this.runAndEmit(
-      "getNodeDetails",
-      () => this.operations.getNodeDetails(nodeId),
-      (node) => node
+    return dedupe(`user.getNodeDetails:${nodeId}`, () =>
+      this.runAndEmit(
+        "getNodeDetails",
+        () => this.operations.getNodeDetails(nodeId),
+        (node) => node
+      )
     );
   }
   /**
@@ -327,11 +332,29 @@ export class ESPCDFUser implements ESPCDFUserInterface {
     this.__storeCallbacks = callbacks;
   }
 
-  async syncHomeWithNodes(): Promise<ESPCDFGroup | null> {
-    if (!this.__storeCallbacks || !this.operations.syncHomeWithNodes) {
+  /**
+   * Full home → rooms → nodes sync through the adaptor. Once the tree is synced,
+   * a non-forced call returns the current home from the store without touching
+   * the network, until a push event or a mutation marks the tree stale.
+   * Concurrent calls share one run.
+   */
+  async syncHomeWithNodes(
+    options: ESPCDFSyncOptions = {}
+  ): Promise<ESPCDFGroup | null> {
+    const callbacks = this.__storeCallbacks;
+    const syncOperation = this.operations.syncHomeWithNodes;
+    if (!callbacks || !syncOperation) {
       return null;
     }
-    return this.operations.syncHomeWithNodes(this, this.__storeCallbacks);
+    if (!options.force && callbacks.isTreeSynced?.()) {
+      return callbacks.getCurrentHome?.() ?? null;
+    }
+    return dedupe(`user.syncHomeWithNodes:${this.identifier}`, async () => {
+      const home = await syncOperation(this, callbacks);
+      callbacks.markTreeSynced?.();
+      callbacks.persistSnapshot?.();
+      return home;
+    });
   }
 
   async setCurrentHome(home: ESPCDFGroup): Promise<void> {
