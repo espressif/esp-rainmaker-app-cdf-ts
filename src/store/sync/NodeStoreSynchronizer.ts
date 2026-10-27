@@ -32,7 +32,11 @@ export class NodeStoreSynchronizer {
   private deviceParamUnsubscribes = new Map<string, () => void>();
   private serviceParamUnsubscribes = new Map<string, () => void>();
 
-  constructor(private nodeStore: NodeStore) { }
+  constructor(
+    private nodeStore: NodeStore,
+    /** Called after a handled operation changed the tree (snapshot bookkeeping). */
+    private onTreeChanged: () => void = () => {}
+  ) { }
 
   /**
    * Attach a node entity to the synchronizer
@@ -48,6 +52,7 @@ export class NodeStoreSynchronizer {
       // Only handle successful operations
       if (success) {
         this.handleNodeOperation(n, operation, data);
+        this.onTreeChanged();
       } else {
         console.error(
           `[NodeStoreSynchronizer] Node operation ${operation} failed:`,
@@ -73,6 +78,7 @@ export class NodeStoreSynchronizer {
         (d, operation, success, data, error) => {
           if (success) {
             this.handleDeviceOperation(d, operation, data, node);
+            this.onTreeChanged();
           } else {
             console.error(
               `[NodeStoreSynchronizer] Device operation ${operation} failed:`,
@@ -90,6 +96,7 @@ export class NodeStoreSynchronizer {
           (p, operation, success, data, error) => {
             if (success) {
               this.handleDeviceParamOperation(p, operation, data);
+              this.onTreeChanged();
             } else {
               console.error(
                 `[NodeStoreSynchronizer] Device param operation ${operation} failed:`,
@@ -109,6 +116,7 @@ export class NodeStoreSynchronizer {
         (s, operation, success, data, error) => {
           if (success) {
             this.handleServiceOperation(s, operation, data, node);
+            this.onTreeChanged();
           } else {
             console.error(
               `[NodeStoreSynchronizer] Service operation ${operation} failed:`,
@@ -130,6 +138,7 @@ export class NodeStoreSynchronizer {
                 operation,
                 data,
               );
+              this.onTreeChanged();
             } else {
               console.error(
                 `[NodeStoreSynchronizer] Service param operation ${operation} failed:`,
@@ -322,6 +331,7 @@ export class NodeStoreSynchronizer {
             this.deviceParamUnsubscribes.set(paramKey, param.subscribe((p, operation, success, data, error) => {
               if (success) {
                 this.handleDeviceParamOperation(p, operation, data);
+                this.onTreeChanged();
               } else {
                 console.error(
                   `[NodeStoreSynchronizer] Device param operation ${operation} failed:`,
@@ -356,6 +366,7 @@ export class NodeStoreSynchronizer {
             this.serviceParamUnsubscribes.set(paramKey, param.subscribe((p, operation, success, data, error) => {
               if (success) {
                 this.handleServiceParamOperation(p, operation, data);
+                this.onTreeChanged();
               } else {
                 console.error(
                   `[NodeStoreSynchronizer] Service param operation ${operation} failed:`,

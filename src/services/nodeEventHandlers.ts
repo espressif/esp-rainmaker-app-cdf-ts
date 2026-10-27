@@ -16,6 +16,17 @@ import {
   EVENT_NODE_DISCONNECTED,
 } from "../utils/constants";
 
+/** The signed-in user entity of the active adaptor, if any. */
+function getActiveUser(rootStore: ESPCDF | null) {
+  const activeAdaptorIdentifier =
+    rootStore?.sdkAdaptorRegistry?.getActiveAdaptorIdentifier();
+  if (!rootStore || !activeAdaptorIdentifier) return null;
+  return (
+    rootStore.userStore.getAuthorizationEntityForAdaptor(activeAdaptorIdentifier) ??
+    null
+  );
+}
+
 /**
  * Safely parses the payload and returns null if parsing fails.
  */
@@ -103,22 +114,21 @@ export function handleNodeParamsChanged(
       applyNamedEntityParamUpdates(node, entityName, params, "service", service);
     }
   }
+  rootStore.markTreeChanged();
 }
 
 /**
  * Handles the `EVENT_USER_NODE_ADDED` event.
- * Adds nodes to the store.
+ * Fetches the new nodes into the store.
  */
 export async function handleUserNodeAdded(rootStore: ESPCDF | null, payload: any) {
-  const activeAdaptorIdentifier = rootStore?.sdkAdaptorRegistry?.getActiveAdaptorIdentifier();
-  if (!rootStore || !activeAdaptorIdentifier) return;
+  const user = getActiveUser(rootStore);
+  if (!rootStore || !user) return;
 
-  const user = rootStore.userStore.getAuthorizationEntityForAdaptor(activeAdaptorIdentifier)
-  if (!user) return;
   try {
-    const nodeIds = payload.nodeIds;
+    const nodeIds: string[] = payload?.nodeIds ?? [];
     await Promise.all(
-      nodeIds.map((nodeId: string) => user.getNodeDetails(nodeId))
+      nodeIds.map((nodeId) => user.getNodeDetails(nodeId))
     );
   } catch (error) {
     console.error(

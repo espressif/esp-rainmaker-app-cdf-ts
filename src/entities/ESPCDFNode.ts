@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { runInAction } from "mobx";
 import { ESPCDFNodeConfig } from "./ESPCDFNodeConfig";
 import { ESPCDFDevice } from "./ESPCDFDevice";
 import { ESPCDFService } from "./ESPCDFService";
@@ -54,13 +55,24 @@ class PropertyChangeEventEmitter {
    * Emit property change event to all registered callbacks
    */
   emit(event: ESPCDFPropertyChangeEvent): void {
-    this.callbacks.forEach((callback) => {
-      try {
-        callback(event);
-      } catch (err) {
-        console.error(`[ESPCDFNode] Error in property change callback:`, err);
-      }
+    runInAction(() => {
+      this.callbacks.forEach((callback) => {
+        try {
+          callback(event);
+        } catch (err) {
+          console.error(`[ESPCDFNode] Error in property change callback:`, err);
+        }
+      });
     });
+  }
+
+  /**
+   * Moves every callback of `other` into this emitter and empties `other`.
+   * Existing callbacks are kept, so subscribers of this emitter survive a merge.
+   */
+  takeOver(other: PropertyChangeEventEmitter): void {
+    other.callbacks.forEach((callback) => this.callbacks.add(callback));
+    other.callbacks.clear();
   }
 
   /**
@@ -70,6 +82,14 @@ class PropertyChangeEventEmitter {
     this.callbacks.clear();
   }
 }
+
+/** Fields `adoptFrom` must not copy: kept on the existing instance or set explicitly. */
+const NODE_ADOPT_SKIP_KEYS: ReadonlySet<string> = new Set([
+  "events",
+  "propertyChangeEmitter",
+  "_raw",
+  "operations",
+]);
 
 export class ESPCDFNode implements ESPCDFNodeInterface {
   identifier: string;
@@ -127,6 +147,29 @@ export class ESPCDFNode implements ESPCDFNodeInterface {
       ESPCDFNodeOperationType
     >();
     this.propertyChangeEmitter = new PropertyChangeEventEmitter();
+  }
+
+  /**
+   * Takes over the data and SDK bindings of a freshly transformed node while
+   * this instance (the one the store and the UI hold) stays the same object.
+   *
+   * Operation listeners on `events` are kept: the store synchronizer owns them.
+   * Property-change callbacks already registered on this instance are kept too,
+   * and the incoming node's callbacks are merged in: the adaptor registered its
+   * `_raw` sync callback on the incoming node against the new SDK object.
+   */
+  adoptFrom(incoming: ESPCDFNode): void {
+    for (const key of Object.keys(incoming)) {
+      if (NODE_ADOPT_SKIP_KEYS.has(key)) {
+        continue;
+      }
+      (this as Record<string, unknown>)[key] = (
+        incoming as Record<string, unknown>
+      )[key];
+    }
+    this._raw = incoming._raw;
+    this.operations = incoming.operations;
+    this.propertyChangeEmitter.takeOver(incoming.propertyChangeEmitter);
   }
 
   /**

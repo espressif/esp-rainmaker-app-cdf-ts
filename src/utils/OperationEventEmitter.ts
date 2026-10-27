@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { runInAction } from "mobx";
+
 /**
  * Generic operation event emitter for entity operations
  * Provides a consistent, reusable pattern for emitting and listening to operation events
@@ -51,15 +53,18 @@ export class ESPCDFOperationEventEmitter<TEntity, TOperation extends string> {
     data?: any,
     error?: any
   ): void {
-    this.listeners.forEach((listener) => {
-      try {
-        listener(entity, operation, success, data, error);
-      } catch (err) {
-        console.error(
-          `[ESPCDFOperationEventEmitter] Error in listener for operation ${operation}:`,
-          err
-        );
-      }
+    // One action per emit: listeners update store state, and their writes batch.
+    runInAction(() => {
+      this.listeners.forEach((listener) => {
+        try {
+          listener(entity, operation, success, data, error);
+        } catch (err) {
+          console.error(
+            `[ESPCDFOperationEventEmitter] Error in listener for operation ${operation}:`,
+            err
+          );
+        }
+      });
     });
   }
 

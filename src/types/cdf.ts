@@ -5,9 +5,22 @@
  */
 
 import { AdaptorRegistry } from "../registry";
+import type { ESPCDFSnapshotConfig } from "./snapshot";
 
 export interface ESPCDFconfig {
   sdkAdaptorRegistry: AdaptorRegistry;
+  /** Disk snapshot of the home tree for cold start. Omit to keep everything in memory. */
+  snapshot?: ESPCDFSnapshotConfig;
+}
+
+/** Options for `user.syncHomeWithNodes`. */
+export interface ESPCDFSyncOptions {
+  /**
+   * Sync even when the tree is already synced. Pull-to-refresh, login and
+   * provisioning pass this; everything else is served from the store until a
+   * push event or a mutation marks the tree stale.
+   */
+  force?: boolean;
 }
 
 export interface ESPCDFBatchOperationResult<TSuccess, TError = any> {
