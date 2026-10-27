@@ -13,11 +13,22 @@ import ScheduleStore from "./scheduleStore";
 import AutomationStore from "./automationStore";
 import SceneStore from "./sceneStore";
 import SubscriptionStore from "./subscriptionStore";
-import { observable, action } from "mobx";
+import { observable, action, reaction } from "mobx";
 import { ESPCDFconfig, ESPSDKAdaptor } from "../types";
 import { AdaptorRegistry } from "../registry";
 import { ERROR_MESSAGE_MAP, isEmptyObject } from "../utils/common";
 import { ESPCDFConfigError } from "../errors";
+import { clearInFlight } from "../utils/singleFlight";
+import type { ESPCDFSnapshotConfig } from "../types/snapshot";
+import {
+  SNAPSHOT_DEFAULT_KEY_PREFIX,
+  SNAPSHOT_DEFAULT_PERSIST_DELAY_MS,
+  SNAPSHOT_SCHEMA_VERSION,
+  buildSnapshot,
+  hydrateSnapshotIntoStore,
+  isSnapshotUsable,
+  snapshotFingerprint,
+} from "../services/snapshot";
 
 /**
  * The root store that manages all individual stores.
@@ -33,6 +44,19 @@ export class ESPCDF {
   @observable accessor sceneStore: SceneStore;
   @observable accessor subscriptionStore: SubscriptionStore;
 
+  /**
+   * Bumped by every store action, synchronizer and event handler that changes the
+   * home tree (groups, nodes, params). Cheap to watch: the snapshot persister
+   * reacts to this counter instead of tracking the whole tree.
+   */
+  @observable accessor treeVersion = 0;
+
+  #snapshotConfig: ESPCDFSnapshotConfig | undefined;
+  #lastSnapshotKey: string | null = null;
+  /** Content of the last snapshot written or restored; identical content is not rewritten. */
+  #lastSnapshotFingerprint: string | null = null;
+  #stopSnapshotPersister: (() => void) | null = null;
+
   constructor(config: ESPCDFconfig) {
     // Order of initialization is important as user store depends on other stores
     this.sdkAdaptorRegistry = config.sdkAdaptorRegistry;
@@ -43,6 +67,129 @@ export class ESPCDF {
     this.sceneStore = new SceneStore(this);
     this.userStore = new UserStore(this);
     this.subscriptionStore = new SubscriptionStore(this);
+    this.#snapshotConfig = config.snapshot;
+    if (this.#snapshotConfig) {
+      this.#startSnapshotPersister(this.#snapshotConfig);
+    }
+  }
+
+  /** Records that the home tree changed. Called by the stores, synchronizers and event handlers. */
+  @action markTreeChanged(): void {
+    this.treeVersion += 1;
+  }
+
+  /**
+   * Writes the snapshot whenever the tree changes: a sync, an own mutation such
+   * as a room rename, or a run of param updates. The watcher reads only
+   * `treeVersion` and the current home id, so a change costs nothing until
+   * `persistDelayMs` of quiet has passed; the tree is walked once per write.
+   */
+  #startSnapshotPersister(config: ESPCDFSnapshotConfig): void {
+    const delayMs = config.persistDelayMs ?? SNAPSHOT_DEFAULT_PERSIST_DELAY_MS;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const stopWatching = reaction(
+      () => `${this.treeVersion}:${this.groupStore.currentHomeId ?? ""}`,
+      () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          timer = null;
+          void this.persistSnapshot().catch((error: unknown) => {
+            console.warn("[ESPCDF] snapshot persist failed:", error);
+          });
+        }, delayMs);
+      }
+    );
+    this.#stopSnapshotPersister = () => {
+      stopWatching();
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
+  }
+
+  /** Fingerprint of what a snapshot of the store would hold right now. */
+  #currentSnapshotFingerprint(): string {
+    const identity = this.#snapshotIdentity();
+    return identity ? snapshotFingerprint(buildSnapshot(this, identity)) : "";
+  }
+
+  /** `true` while the tree was restored from disk and no live sync has completed yet. */
+  get isSnapshot(): boolean {
+    return this.groupStore.dataSource === "snapshot";
+  }
+
+  /**
+   * Who the snapshot belongs to. The storage key is `<prefix>:<adaptorId>:<userId>`,
+   * so each account has its own slot and a restore can only ever read its own
+   * snapshot. Without a user id (profile not loaded yet) there is no identity:
+   * nothing is written or restored.
+   */
+  #snapshotIdentity(): { adaptorId: string; userId: string; key: string } | null {
+    const adaptorId = this.getActiveAdaptorIdentifier();
+    const userId = this.userStore.user?.userInfo?.id;
+    if (!adaptorId || typeof userId !== "string" || userId.length === 0) return null;
+    const prefix = this.#snapshotConfig?.keyPrefix ?? SNAPSHOT_DEFAULT_KEY_PREFIX;
+    return { adaptorId, userId, key: `${prefix}:${adaptorId}:${userId}` };
+  }
+
+  /**
+   * Saves the current tree to disk. Returns `false` when snapshots are off, there
+   * is nothing to save, or the content already on disk is the same.
+   */
+  async persistSnapshot(): Promise<boolean> {
+    const config = this.#snapshotConfig;
+    const identity = this.#snapshotIdentity();
+    if (!config || !identity) return false;
+    const snapshot = buildSnapshot(this, identity);
+    if (!snapshot) return false;
+    const fingerprint = snapshotFingerprint(snapshot);
+    if (fingerprint === this.#lastSnapshotFingerprint) return false;
+    await config.storage.setItem(identity.key, JSON.stringify(snapshot));
+    this.#lastSnapshotKey = identity.key;
+    this.#lastSnapshotFingerprint = fingerprint;
+    return true;
+  }
+
+  /**
+   * Restores the tree from disk when the store is empty and a usable snapshot
+   * exists for this adaptor and user. Returns `true` when something was restored.
+   */
+  async hydrateSnapshot(): Promise<boolean> {
+    const config = this.#snapshotConfig;
+    const identity = this.#snapshotIdentity();
+    if (!config || !identity || this.groupStore.groupsList.length > 0) return false;
+    const raw = await config.storage.getItem(identity.key);
+    if (!raw) return false;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return false;
+    }
+    if (
+      !isSnapshotUsable(parsed, {
+        adaptorId: identity.adaptorId,
+        userId: identity.userId,
+        maxAgeMs: config.maxAgeMs,
+        schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+      })
+    ) {
+      return false;
+    }
+    hydrateSnapshotIntoStore(this, parsed, config.liveTimeoutMs);
+    this.#lastSnapshotKey = identity.key;
+    // What was just restored is what is on disk: do not write it back.
+    this.#lastSnapshotFingerprint = this.#currentSnapshotFingerprint();
+    return true;
+  }
+
+  /** Deletes the snapshot of the signed-in user (logout, account deletion). */
+  async clearSnapshot(): Promise<void> {
+    const config = this.#snapshotConfig;
+    if (!config) return;
+    const key = this.#snapshotIdentity()?.key ?? this.#lastSnapshotKey;
+    if (!key) return;
+    await config.storage.removeItem(key);
+    this.#lastSnapshotKey = null;
   }
 
   /**
@@ -128,12 +275,15 @@ export class ESPCDF {
    * forwarded store by store — there is no way to reach them from outside.
    */
   dispose(): void {
+    this.#stopSnapshotPersister?.();
+    this.#stopSnapshotPersister = null;
     this.nodeStore.dispose();
     this.groupStore.dispose();
     this.userStore.dispose();
     this.scheduleStore.dispose();
     this.automationStore.dispose();
     this.sceneStore.dispose();
+    clearInFlight();
   }
 
   /**

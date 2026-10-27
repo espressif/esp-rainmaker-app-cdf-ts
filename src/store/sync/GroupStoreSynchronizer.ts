@@ -5,6 +5,7 @@
  */
 
 import { ESPCDFGroup } from "../../entities/ESPCDFGroup";
+import { runInAction } from "mobx";
 import {
   ESPCDFGroupOperationType,
   ESPCDFGroupSharingRequestOperationType,
@@ -17,7 +18,6 @@ import { ESPCDFScene } from "../../entities/ESPCDFScene";
 import { ESPCDFSchedule } from "../../entities/ESPCDFSchedule";
 import { ESPCDFAutomation } from "../../entities/ESPCDFAutomation";
 import { ESPCDFGroupSharingRequest } from "../../entities/ESPCDFGroupSharingRequest";
-import { applyRegisteredTransports } from "../../utils/registeredTransports";
 
 /**
  * Synchronizer for GroupStore reactive operations
@@ -50,6 +50,7 @@ export class GroupStoreSynchronizer {
         // Only handle successful operations
         if (success) {
           this.handleOperation(g, operation, data);
+          this.rootStore?.markTreeChanged?.();
         } else {
           console.error(
             `[GroupStoreSynchronizer] Operation ${operation} failed:`,
@@ -149,18 +150,27 @@ export class GroupStoreSynchronizer {
   ): void {
     switch (operation) {
       case "delete":
+        // The store is correct once the group is gone; no refetch is needed.
         this.groupStore.deleteGroup(group);
+        if (!group.parentId) {
+          this.pruneNodesOfRemovedHome(group);
+        }
         break;
 
       case "updateMetadata":
-        // Metadata is already updated in the entity
+        if (data) {
+          runInAction(() => {
+            group.metadata = data as Record<string, any>;
+          });
+        }
         break;
 
       case "updateGroupInfo":
-        // GroupInfo is already updated in the entity
+        // Applied to the store's instance, found by walking the tree, so a room
+        // rename shows at once (rooms are not top-level entries).
         if (data) {
           const groupInfo = data as Record<string, any>;
-          this.groupStore.updateGroup(group.id, {
+          this.groupStore.patchGroup(group.id, {
             ...(groupInfo.groupName && { name: groupInfo.groupName }),
             ...(groupInfo.description && {
               description: groupInfo.description,
@@ -180,17 +190,9 @@ export class GroupStoreSynchronizer {
         break;
 
       case "createSubGroup":
-        // Subgroup is created, add it to store and parent group's subGroups array
+        // The store adopts the new room (observable, attached) under its parent.
         if (data && data instanceof ESPCDFGroup) {
-          const createdSubGroup = data as ESPCDFGroup;
-          // Attach the new subgroup to synchronizer
-          this.attach(createdSubGroup);
-          this.groupStore.updateGroup(group.id, {
-            subGroups: [
-              ...(this.groupStore.getGroupById(group.id)?.subGroups || []),
-              createdSubGroup,
-            ],
-          });
+          this.groupStore.addSubGroup(group.id, data);
         }
         break;
 
@@ -293,43 +295,57 @@ export class GroupStoreSynchronizer {
         if (data && Array.isArray(data)) {
           const nodeIds = data as string[];
 
-          // Update the group's nodeIds array immediately (optimistic update)
-          if (this.groupStore.groupsByIDMap[group.id]) {
-            const currentNodeIds = this.groupStore.groupsByIDMap[group.id].nodeIds || [];
-            const newNodeIds = nodeIds.filter(id => !currentNodeIds.includes(id));
+          // Update the group's nodeIds array immediately (optimistic update).
+          // `group` is the store instance for homes and rooms alike.
+          runInAction(() => {
+            const currentNodeIds = group.nodeIds || [];
+            const newNodeIds = nodeIds.filter((id) => !currentNodeIds.includes(id));
             if (newNodeIds.length > 0) {
-              this.groupStore.groupsByIDMap[group.id].nodeIds = [
-                ...currentNodeIds,
-                ...newNodeIds
-              ];
+              group.nodeIds = [...currentNodeIds, ...newNodeIds];
             }
+          });
+
+          // Nodes already in memory (the usual case: moved between rooms of the
+          // same home) are linked at once; only unknown ones are fetched.
+          const nodeStore = this.rootStore?.nodeStore;
+          const known = nodeIds
+            .map((nodeId) => nodeStore?.getNodeById(nodeId))
+            .filter((node): node is ESPCDFNode => Boolean(node));
+          if (known.length > 0) {
+            runInAction(() => {
+              const existingIds = new Set((group.nodeDetails || []).map((n) => n.id));
+              group.nodeDetails = [
+                ...(group.nodeDetails || []),
+                ...known.filter((node) => !existingIds.has(node.id)),
+              ];
+            });
           }
+          const unknownIds = nodeIds.filter((nodeId) => !nodeStore?.getNodeById(nodeId));
 
           // Get the user from rootStore to fetch node details
           const user = this.rootStore?.userStore?.adaptorAuthorizationEntityMap?.[
             Object.keys(this.rootStore?.userStore?.adaptorAuthorizationEntityMap || {})[0]
           ];
 
-          if (user) {
-            // Fetch all newly added nodes in parallel
+          if (user && unknownIds.length > 0) {
+            // Fetch the nodes the store does not hold yet, in parallel
             Promise.all(
-              nodeIds.map((nodeId) =>
+              unknownIds.map((nodeId) =>
                 user.getNodeDetails(nodeId).catch((error: unknown) => {
                   console.error(`[GroupStoreSynchronizer] Failed to fetch node ${nodeId} details:`, error);
                   return null;
                 })
               )
             ).then((fetchedNodes) => {
-              // Update the group's nodeDetails array with the newly fetched nodes
-              const validNodes = fetchedNodes.filter(Boolean);
-              if (validNodes.length > 0 && this.groupStore.groupsByIDMap[group.id]) {
-                const existingNodes = this.groupStore.groupsByIDMap[group.id].nodeDetails || [];
-                const existingNodeIds = new Set(existingNodes.map(n => n.id));
-                const newNodes = validNodes.filter(n => !existingNodeIds.has(n.id));
-                this.groupStore.groupsByIDMap[group.id].nodeDetails = [
-                  ...existingNodes,
-                  ...newNodes
-                ];
+              // Append the newly fetched nodes to the group's nodeDetails
+              const validNodes = fetchedNodes.filter(Boolean) as ESPCDFNode[];
+              if (validNodes.length > 0) {
+                runInAction(() => {
+                  const existingNodes = group.nodeDetails || [];
+                  const existingNodeIds = new Set(existingNodes.map((n) => n.id));
+                  const newNodes = validNodes.filter((n) => !existingNodeIds.has(n.id));
+                  group.nodeDetails = [...existingNodes, ...newNodes];
+                });
               }
             });
           }
@@ -337,12 +353,23 @@ export class GroupStoreSynchronizer {
         break;
 
       case "removeNodes":
-        // Nodes are already updated in the entity
+        if (data && Array.isArray(data)) {
+          const removedIds = new Set(data as string[]);
+          runInAction(() => {
+            group.nodeIds = (group.nodeIds || []).filter((id) => !removedIds.has(id));
+            group.nodeDetails = (group.nodeDetails || []).filter(
+              (node) => !removedIds.has(node.id)
+            );
+          });
+        }
         break;
 
       case "leave":
         // Group should be removed from store
         this.groupStore.deleteGroup(group);
+        if (!group.parentId) {
+          this.pruneNodesOfRemovedHome(group);
+        }
         break;
 
       // Operations that don't require store updates
@@ -364,22 +391,30 @@ export class GroupStoreSynchronizer {
   /**
    * Merges node list into nodeStore and the group's {@link ESPCDFGroup.nodeDetails}.
    */
-  private syncGroupNodes(group: ESPCDFGroup, nodes: ESPCDFNode[]): void {
+  /**
+   * Drops the nodes of a home that was deleted or left, unless another home
+   * still lists them, so they do not linger in memory or in the snapshot.
+   */
+  private pruneNodesOfRemovedHome(home: ESPCDFGroup): void {
     const nodeStore = this.rootStore?.nodeStore;
-    const registered =
-      this.rootStore?.subscriptionStore.getRegisteredTransportsSnapshot() ??
-      {};
-    const merged =
-      nodeStore?.nodesByIDMap != null
-        ? nodes.map((node) => applyRegisteredTransports(node, registered))
-        : nodes;
-    nodeStore?.setNodesList?.(merged);
-    const stored = this.groupStore.groupsByIDMap[group.id];
-    if (stored) {
-      stored.nodeDetails = merged.map(
-        (node) => nodeStore?.getNodeById(node.id) ?? node,
-      );
+    if (!nodeStore) return;
+    const collect = (group: ESPCDFGroup, into: Set<string>): Set<string> => {
+      (group.nodeIds ?? []).forEach((id) => into.add(id));
+      group.subGroups?.forEach((sub) => collect(sub, into));
+      return into;
+    };
+    const stillReferenced = new Set<string>();
+    this.groupStore.groupsList.forEach((remaining) => collect(remaining, stillReferenced));
+    for (const nodeId of collect(home, new Set<string>())) {
+      if (!stillReferenced.has(nodeId) && nodeStore.getNodeById(nodeId)) {
+        nodeStore.deleteNode(nodeId);
+      }
     }
+  }
+
+  /** Fetched nodes land through the store, which also fills the home's rooms. */
+  private syncGroupNodes(group: ESPCDFGroup, nodes: ESPCDFNode[]): void {
+    this.groupStore.attachNodesToGroup(group.id, nodes);
   }
 
   /**

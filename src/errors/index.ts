@@ -7,3 +7,4 @@
 export * from "./base";
 export * from "./config";
 export * from "./registry";
+export * from "./snapshot";

@@ -21,6 +21,7 @@ export * from "./utils/common";
 export * from "./utils/constants";
 export * from "./utils/home";
 export * from "./utils/registeredTransports";
+export * from "./utils/singleFlight";
 export * from "./services";
 
 // Export entities

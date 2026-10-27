@@ -115,7 +115,10 @@ export class UserStoreSynchronizer {
 
       case "confirmAccountDeletion":
       case "logout":
-        // Clear all stores and remove user
+        // Clear all stores and remove user (snapshot first: its key needs the user)
+        void this.groupStore.rootStore.clearSnapshot().catch((error: unknown) => {
+          console.warn("[UserStoreSynchronizer] snapshot clear failed:", error);
+        });
         this.groupStore.clear();
         this.nodeStore.clear();
         this.automationStore.clear();
